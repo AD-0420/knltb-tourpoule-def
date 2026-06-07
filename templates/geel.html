@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Geel Klassement – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🟡 Geel Klassement</h1>
+    <p class="text-gray-400 mt-1">Algemeen klassement – zo veel mogelijk punten</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-6">
+
+  <!-- Positiegrafiek -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow"><i class="bi bi-graph-up mr-2"></i>Positie per etappe</span>
+      <div class="flex gap-1" id="chartToggle">
+        <button data-mode="positie"
+                class="text-xs px-3 py-1 rounded-lg font-semibold bg-tdf-yellow text-zinc-900 transition-colors">
+          Positie
+        </button>
+        <button data-mode="punten"
+                class="text-xs px-3 py-1 rounded-lg font-semibold bg-zinc-700 text-gray-300 hover:bg-zinc-600 transition-colors">
+          Punten
+        </button>
+      </div>
+    </div>
+    <div class="p-5">
+      <canvas id="positieChart" height="85"></canvas>
+    </div>
+  </div>
+
+  <!-- Eindstand -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-tdf-yellow">
+      <span class="font-bold text-zinc-900"><i class="bi bi-trophy mr-2"></i>Eindstand</span>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="bg-zinc-900 text-left text-xs font-semibold text-tdf-yellow uppercase tracking-wider">
+          <th class="pl-4 py-3 w-14">#</th>
+          <th class="py-3">Deelnemer</th>
+          <th class="py-3 text-gray-400">Cluster</th>
+          <th class="pr-4 py-3 text-right">Punten</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for s in standings %}
+        <tr class="hover:bg-yellow-50 transition-colors">
+          <td class="pl-4 py-3">
+            <span class="rank-badge rank-{% if s.rank <= 3 %}{{ s.rank }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+              {{ s.rank }}
+            </span>
+          </td>
+          <td class="py-3">
+            <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-semibold text-gray-900 hover:text-amber-600">
+              {{ s.participant.name }}
+            </a>
+          </td>
+          <td class="py-3 text-sm text-gray-400">{{ s.participant.cluster.name if s.participant.cluster else '—' }}</td>
+          <td class="pr-4 py-3 text-right"><span class="pts-badge">{{ s.geel }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-gray-400 py-8">Geen deelnemers gevonden.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Per cluster -->
+  {% if cluster_data %}
+  <h2 class="text-xl font-bold text-gray-900 pt-2">Clusterklassement</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for cluster_name, members in cluster_data.items() %}
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-800">
+        <span class="font-semibold text-tdf-yellow">{{ cluster_name }}</span>
+      </div>
+      <table class="w-full text-sm">
+        <tbody class="divide-y divide-gray-100">
+          {% for s in members %}
+          <tr class="hover:bg-yellow-50 transition-colors">
+            <td class="pl-4 py-2.5 w-8 text-gray-400 font-mono">{{ loop.index }}</td>
+            <td class="py-2.5">
+              <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-medium text-gray-800 hover:text-amber-600">
+                {{ s.participant.name }}
+              </a>
+            </td>
+            <td class="pr-4 py-2.5 text-right"><span class="pts-badge text-xs">{{ s.geel }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+    {% if unclustered %}
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-gray-500">
+        <span class="font-semibold text-white">Overig</span>
+      </div>
+      <table class="w-full text-sm">
+        <tbody class="divide-y divide-gray-100">
+          {% for s in unclustered %}
+          <tr class="hover:bg-yellow-50">
+            <td class="pl-4 py-2.5 w-8 text-gray-400">{{ loop.index }}</td>
+            <td class="py-2.5">
+              <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-medium text-gray-800 hover:text-amber-600">
+                {{ s.participant.name }}
+              </a>
+            </td>
+            <td class="pr-4 py-2.5 text-right"><span class="pts-badge text-xs">{{ s.geel }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+let chartInstance = null;
+let positieData = null;
+let puntenData = null;
+
+async function loadChart(mode) {
+  if (mode === 'positie' && !positieData) {
+    const r = await fetch('{{ url_for("api_chart_positie") }}');
+    positieData = await r.json();
+  }
+  if (mode === 'punten' && !puntenData) {
+    const r = await fetch('{{ url_for("api_chart_geel") }}');
+    puntenData = await r.json();
+  }
+  const data = mode === 'positie' ? positieData : puntenData;
+  if (chartInstance) chartInstance.destroy();
+  const isPositie = mode === 'positie';
+  chartInstance = new Chart(document.getElementById('positieChart').getContext('2d'), {
+    type: 'line', data,
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${isPositie ? '#'+c.parsed.y : c.parsed.y+' pts'}` } }
+      },
+      scales: {
+        y: {
+          reverse: isPositie,
+          title: { display: true, text: isPositie ? 'Positie' : 'Punten' },
+          ticks: isPositie ? { stepSize: 1, callback: v => '#'+v } : {}
+        }
+      }
+    }
+  });
+}
+
+document.getElementById('chartToggle').addEventListener('click', e => {
+  const btn = e.target.closest('[data-mode]');
+  if (!btn) return;
+  document.querySelectorAll('#chartToggle button').forEach(b => {
+    const active = b === btn;
+    b.className = `text-xs px-3 py-1 rounded-lg font-semibold transition-colors ${active ? 'bg-tdf-yellow text-zinc-900' : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'}`;
+  });
+  loadChart(btn.dataset.mode);
+});
+loadChart('positie');
+</script>
+{% endblock %}

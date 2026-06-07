@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Renners – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🚴 Renners</h1>
+    <p class="text-gray-400 mt-1">{{ rider_data|length }} renners · punten, populariteit & selecties</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-4" id="rennerTabs">
+    <button data-tab="punten" onclick="switchTab('punten')"
+            class="tab-btn px-5 py-2 rounded-xl font-semibold text-sm bg-zinc-900 text-tdf-yellow transition-colors">
+      <i class="bi bi-bar-chart mr-1"></i> Puntenstand
+    </button>
+    <button data-tab="populair" onclick="switchTab('populair')"
+            class="tab-btn px-5 py-2 rounded-xl font-semibold text-sm bg-white text-gray-600 hover:bg-gray-50 transition-colors">
+      <i class="bi bi-people mr-1"></i> Populariteit
+    </button>
+  </div>
+
+  <!-- Tab: Punten -->
+  <div id="tab-punten" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow"><i class="bi bi-bar-chart mr-2"></i>Punten per renner</span>
+    </div>
+    {% if rider_data %}
+    <table class="w-full">
+      <thead>
+        <tr class="text-left text-xs font-semibold text-tdf-yellow uppercase tracking-wider bg-zinc-800">
+          <th class="pl-4 py-3 w-14">#</th>
+          <th class="py-3">Renner</th>
+          <th class="py-3 text-right pr-4">Punten</th>
+          <th class="py-3 text-right pr-4 text-gray-500">🟡</th>
+          <th class="py-3 text-right pr-4 text-gray-500">🔴</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for item in rider_data %}
+        <tr class="hover:bg-yellow-50 transition-colors">
+          <td class="pl-4 py-3">
+            <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+              {{ loop.index }}
+            </span>
+          </td>
+          <td class="py-3 font-semibold text-gray-900">{{ item.rider.name }}</td>
+          <td class="py-3 text-right pr-4"><span class="pts-badge">{{ item.points }}</span></td>
+          <td class="py-3 text-right pr-4 text-sm text-gray-400">
+            {% if item.geel_count > 0 %}{{ item.geel_count }}×{% else %}—{% endif %}
+          </td>
+          <td class="py-3 text-right pr-4 text-sm text-gray-400">
+            {% if item.rood_count > 0 %}{{ item.rood_count }}×{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center text-gray-400 py-12">
+      <div class="text-5xl mb-3">🚴</div>
+      <p>Nog geen punten ingevoerd.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Populariteit -->
+  <div id="tab-populair" class="hidden bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow"><i class="bi bi-people mr-2"></i>Hoe vaak gekozen?</span>
+    </div>
+    {% set popular = rider_data | sort(attribute='geel_count', reverse=True) %}
+    {% if popular %}
+    <table class="w-full">
+      <thead>
+        <tr class="text-left text-xs font-semibold text-tdf-yellow uppercase tracking-wider bg-zinc-800">
+          <th class="pl-4 py-3 w-14">#</th>
+          <th class="py-3">Renner</th>
+          <th class="py-3">🟡 Geel team</th>
+          <th class="py-3">🔴 Rood team</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for item in popular %}
+        {% if item.geel_count > 0 or item.rood_count > 0 %}
+        <tr class="hover:bg-yellow-50 transition-colors">
+          <td class="pl-4 py-3">
+            <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+              {{ loop.index }}
+            </span>
+          </td>
+          <td class="py-3 font-semibold text-gray-900">{{ item.rider.name }}</td>
+          <td class="py-3 pr-4">
+            {% if item.geel_count > 0 %}
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-100 rounded-full h-2 max-w-[140px]">
+                <div class="bg-tdf-yellow h-2 rounded-full" style="width:{{ item.geel_pct }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 whitespace-nowrap">{{ item.geel_count }}/{{ n_participants }}</span>
+            </div>
+            {% else %}—{% endif %}
+          </td>
+          <td class="py-3 pr-4">
+            {% if item.rood_count > 0 %}
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-100 rounded-full h-2 max-w-[140px]">
+                <div class="bg-red-500 h-2 rounded-full" style="width:{{ item.rood_pct }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 whitespace-nowrap">{{ item.rood_count }}/{{ n_participants }}</span>
+            </div>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center text-gray-400 py-12">Nog geen teams ingevoerd.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name) {
+  ['punten','populair'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const active = b.dataset.tab === name;
+    b.className = `tab-btn px-5 py-2 rounded-xl font-semibold text-sm transition-colors ${active ? 'bg-zinc-900 text-tdf-yellow' : 'bg-white text-gray-600 hover:bg-gray-50'}`;
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-12 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-4xl font-extrabold text-tdf-yellow">🚴 KNLTB Tourpoule 2026</h1>
+    <p class="text-gray-400 mt-2 text-lg">Tour de France 2026 — Kies je 15 renners en strijd om de zege!</p>
+    <div class="mt-4">
+      {% if stages_done > 0 %}
+        <span class="inline-block bg-tdf-yellow text-zinc-900 font-bold px-4 py-1.5 rounded-full text-sm">
+          Etappe {{ stages_done }} / 21 gereden
+        </span>
+      {% else %}
+        <span class="inline-block bg-zinc-700 text-gray-300 px-4 py-1.5 rounded-full text-sm">
+          Nog geen etappes ingevoerd
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+    <!-- Geel klassement -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-tdf-yellow">
+        <span class="font-bold text-zinc-900">🟡 Geel Klassement – Top 5</span>
+        <a href="{{ url_for('geel_klassement') }}"
+           class="text-xs font-semibold bg-zinc-900 text-tdf-yellow px-3 py-1 rounded-lg hover:bg-zinc-800 transition-colors">
+          Volledig →
+        </a>
+      </div>
+      {% if geel %}
+      <table class="w-full">
+        <tbody class="divide-y divide-gray-100">
+          {% for s in geel %}
+          <tr class="hover:bg-yellow-50 transition-colors">
+            <td class="pl-4 py-3 w-12">
+              <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+                {{ loop.index }}
+              </span>
+            </td>
+            <td class="py-3">
+              <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-semibold text-gray-900 hover:text-amber-600">
+                {{ s.participant.name }}
+              </a>
+              {% if s.participant.cluster %}
+                <span class="text-xs text-gray-400 ml-1">{{ s.participant.cluster.name }}</span>
+              {% endif %}
+            </td>
+            <td class="pr-4 py-3 text-right">
+              <span class="pts-badge">{{ s.geel }} pts</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-center text-gray-400 py-10">
+        <div class="text-4xl mb-2">⏳</div>
+        <p class="text-sm">Nog geen deelnemers of resultaten.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Rode Lantaarn -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-red-600">
+        <span class="font-bold text-white">🔴 Rode Lantaarn – Top 5</span>
+        <a href="{{ url_for('rood_klassement') }}"
+           class="text-xs font-semibold bg-white text-red-600 px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors">
+          Volledig →
+        </a>
+      </div>
+      {% if rood %}
+      <table class="w-full">
+        <tbody class="divide-y divide-gray-100">
+          {% for s in rood %}
+          <tr class="hover:bg-red-50 transition-colors">
+            <td class="pl-4 py-3 w-12">
+              <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+                {{ loop.index }}
+              </span>
+            </td>
+            <td class="py-3">
+              <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-semibold text-gray-900 hover:text-red-600">
+                {{ s.participant.name }}
+              </a>
+            </td>
+            <td class="pr-4 py-3 text-right">
+              <span class="pts-badge-rood">{{ s.rood }} pts</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-center text-gray-400 py-10">
+        <div class="text-4xl mb-2">🏮</div>
+        <p class="text-sm">Geen Rode Lantaarn deelnemers.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Spelregels -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow"><i class="bi bi-info-circle mr-2"></i>Spelregels</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+      <div class="p-5">
+        <h3 class="font-bold text-gray-900 mb-2">🟡 Geel Klassement</h3>
+        <p class="text-sm text-gray-500">Kies 15 renners. Verzamel zo <strong class="text-gray-700">veel mogelijk</strong> punten via etappeplaatsen, truidragers en eindklassementen.</p>
+      </div>
+      <div class="p-5">
+        <h3 class="font-bold text-gray-900 mb-2">🔴 Rode Lantaarn</h3>
+        <p class="text-sm text-gray-500">Optioneel: kies 15 renners die zo <strong class="text-gray-700">weinig mogelijk</strong> punten scoren. De rode lantaarn wint!</p>
+      </div>
+      <div class="p-5">
+        <h3 class="font-bold text-gray-900 mb-2">🎯 Punten</h3>
+        <p class="text-sm text-gray-500">Top-15 per etappe (35–25–20–18–16…1), <strong class="text-gray-700">1 pt</strong>/dag truidrager, eindklassementen, <strong class="text-gray-700">15 pts</strong> per goede bonusvraag.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

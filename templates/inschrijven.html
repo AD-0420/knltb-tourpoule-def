@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+{% block title %}Inschrijven – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-0">
+  <div class="px-6 lg:px-10">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-tdf-yellow">🚴 Inschrijven Tourpoule 2026</h1>
+        <p class="text-gray-400 mt-1">Tour de France 2026 · Kies je 15 renners en strijd om de zege!</p>
+      </div>
+      <div class="text-right">
+        {% if gesloten %}
+          <span class="inline-block bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-sm">
+            🔒 Inschrijving gesloten
+          </span>
+        {% else %}
+          <div class="text-gray-400 text-xs mb-1">Deadline</div>
+          <div class="text-tdf-yellow font-bold text-lg">vrijdag 3 juli 2026 · 17:00</div>
+          <div id="countdown" class="text-gray-400 text-sm mt-1"></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if gesloten %}
+<div class="px-6 lg:px-10 py-16 text-center">
+  <div class="text-6xl mb-4">🔒</div>
+  <h2 class="text-2xl font-bold text-gray-700 mb-2">Inschrijving gesloten</h2>
+  <p class="text-gray-500">De deadline was vrijdag 3 juli 2026 om 17:00.<br>Neem contact op met de beheerder als je vragen hebt.</p>
+  <a href="{{ url_for('geel_klassement') }}" class="inline-block mt-6 bg-tdf-yellow text-zinc-900 font-semibold px-6 py-3 rounded-xl hover:bg-yellow-300 transition-colors">
+    Bekijk de standen →
+  </a>
+</div>
+{% elif not riders %}
+<div class="px-6 lg:px-10 py-16 text-center">
+  <div class="text-5xl mb-4">⏳</div>
+  <h2 class="text-xl font-bold text-gray-600 mb-2">Startlijst nog niet beschikbaar</h2>
+  <p class="text-gray-400 text-sm">De beheerder moet eerst de TdF 2026 startlijst invoeren.</p>
+</div>
+{% else %}
+
+<!-- Progress bar -->
+<div class="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
+  <div class="px-6 lg:px-10 py-3">
+    <div class="flex items-center gap-2 overflow-x-auto">
+      {% set steps = [('1','👤','Gegevens'), ('2','🟡','Geel team'), ('3','🔴','Rood team'), ('4','🎯','Bonusvragen'), ('5','✅','Bevestigen')] %}
+      {% if not questions %}{% set steps = [('1','👤','Gegevens'), ('2','🟡','Geel team'), ('3','🔴','Rood team'), ('4','✅','Bevestigen')] %}{% endif %}
+      {% for num, icon, label in steps %}
+      <button onclick="goToStep({{ num }})" id="step-btn-{{ num }}"
+              class="step-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors
+                     {% if num == '1' %}bg-tdf-yellow text-zinc-900{% else %}text-gray-400 hover:text-gray-600{% endif %}">
+        <span>{{ icon }}</span> <span class="hidden sm:inline">{{ label }}</span>
+        <span class="sm:hidden">{{ num }}</span>
+      </button>
+      {% if not loop.last %}
+      <span class="text-gray-300 text-xs flex-shrink-0">›</span>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<form method="post" id="inschrijf-form">
+<div class="px-6 lg:px-10 py-8 space-y-6">
+
+  <!-- ── Stap 1: Persoonlijke gegevens ── -->
+  <div id="step-1" class="step-content">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Formulier -->
+      <div class="lg:col-span-1 space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="px-5 py-3 bg-zinc-900">
+            <span class="font-semibold text-tdf-yellow">👤 Jouw gegevens</span>
+          </div>
+          <div class="p-5 space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                Naam <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="naam" id="inp-naam" required placeholder="Voor- en achternaam"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                Afdeling <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="afdeling" id="inp-afdeling" required placeholder="Bijv. IT, HR, Topsport…"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            </div>
+            <div class="bg-tdf-yellow/10 border border-tdf-yellow/30 rounded-xl p-3 text-sm text-amber-800">
+              <strong>Inschrijfgeld:</strong> {{ inschrijfgeld }} — wordt apart gecommuniceerd.
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="nextStep(1)"
+                class="w-full bg-tdf-yellow text-zinc-900 font-bold px-4 py-3 rounded-xl hover:bg-yellow-300 transition-colors">
+          Volgende: Kies geel team →
+        </button>
+      </div>
+
+      <!-- Spelregels -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="px-5 py-3 bg-zinc-900">
+            <span class="font-semibold text-tdf-yellow"><i class="bi bi-info-circle mr-2"></i>Spelregels Tourpoule 2026</span>
+          </div>
+          <div class="p-5 space-y-4 text-sm text-gray-600">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h3 class="font-bold text-gray-900 mb-2">🟡 Geel Klassement</h3>
+                <ul class="space-y-1 text-xs text-gray-600">
+                  <li>• Kies <strong>15 renners</strong> uit de startlijst</li>
+                  <li>• Verzamel zo <strong>veel mogelijk</strong> punten</li>
+                  <li>• Punten via etappeplaatsen, truidragers en eindklassementen</li>
+                  <li>• Bonusvragen leveren extra punten op</li>
+                </ul>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <h3 class="font-bold text-gray-900 mb-2">🔴 Rode Lantaarn <span class="text-xs font-normal text-gray-500">(optioneel)</span></h3>
+                <ul class="space-y-1 text-xs text-gray-600">
+                  <li>• Kies een <strong>apart team van 15 renners</strong></li>
+                  <li>• Verzamel zo <strong>weinig mogelijk</strong> punten</li>
+                  <li>• Kies domestiques, uitvallers of ploegrijders</li>
+                  <li>• Bonusvragen tellen <em>niet</em> mee</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="bg-gray-50 px-4 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wide">Puntentelling</div>
+              <div class="grid grid-cols-3 divide-x divide-gray-200 text-xs">
+                <div class="p-3">
+                  <div class="font-semibold text-gray-700 mb-2">Per etappe</div>
+                  <div class="space-y-0.5 text-gray-500">
+                    <div>#1 → <strong class="text-gray-700">35 pts</strong></div>
+                    <div>#2 → 25 pts</div>
+                    <div>#3 → 20 pts</div>
+                    <div>#4 → 18 pts</div>
+                    <div>#5 → 16 pts</div>
+                    <div>#6–10 → 14…6 pts</div>
+                    <div>#11–15 → 5…1 pts</div>
+                  </div>
+                </div>
+                <div class="p-3">
+                  <div class="font-semibold text-gray-700 mb-2">Klassementen</div>
+                  <div class="space-y-0.5 text-gray-500">
+                    <div>Geel / Groen</div>
+                    <div>Bollen / Wit</div>
+                    <div class="text-gray-400 text-xs">zelfde tabel</div>
+                    <div class="mt-2">Truidrager</div>
+                    <div><strong class="text-gray-700">+1 pt/dag</strong></div>
+                  </div>
+                </div>
+                <div class="p-3">
+                  <div class="font-semibold text-gray-700 mb-2">Bonus</div>
+                  <div class="space-y-0.5 text-gray-500">
+                    <div>Per juiste</div>
+                    <div>bonusvraag:</div>
+                    <div class="text-lg font-bold text-tdf-yellow">15 pts</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-400">
+              De startlijst is gebaseerd op de officiële TdF 2026 deelnemerslijst. Wijzigingen voor de start zijn mogelijk.
+              Bij gelijk puntenaantal geldt het totaal aantal gescoorde punten in de etappes als tiebreaker.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Stap 2: Geel team ── -->
+  <div id="step-2" class="step-content hidden">
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-tdf-yellow">
+        <span class="font-bold text-zinc-900">🟡 Kies je Geel team – precies 15 renners</span>
+        <span id="geel-counter" class="text-sm font-bold bg-zinc-900 text-tdf-yellow px-3 py-1 rounded-full">0 / 15</span>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3 border border-gray-200 rounded-xl px-3 py-2">
+          <i class="bi bi-search text-gray-400"></i>
+          <input type="text" id="search-geel-pub" placeholder="Zoek renner op naam…"
+                 class="flex-1 text-sm focus:outline-none bg-transparent">
+          <button type="button" onclick="clearSearch('search-geel-pub','grid-geel-pub')"
+                  class="text-xs text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="rider-grid" id="grid-geel-pub">
+          {% for r in riders %}
+          <label id="lbl-geel-{{ r.id }}">
+            <input type="checkbox" name="geel_riders" value="{{ r.id }}" class="geel-pub-cb">
+            <span>{{ r.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 mt-2">💡 Tip: een renner kan niet in zowel geel als rood team zitten.</p>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-4">
+      <button type="button" onclick="goToStep(1)"
+              class="border border-gray-300 text-gray-600 px-6 py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+        ← Terug
+      </button>
+      <button type="button" onclick="nextStep(2)"
+              class="flex-1 bg-tdf-yellow text-zinc-900 font-bold px-4 py-3 rounded-xl hover:bg-yellow-300 transition-colors">
+        Volgende: Rood team (optioneel) →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Stap 3: Rood team ── -->
+  <div id="step-3" class="step-content hidden">
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-red-600">
+        <span class="font-bold text-white">🔴 Rood team – optioneel, 0 of precies 15 renners</span>
+        <span id="rood-counter" class="text-sm font-bold bg-white text-red-600 px-3 py-1 rounded-full">0 / 15</span>
+      </div>
+      <div class="p-4">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 mb-3">
+          <strong>Optioneel:</strong> doe je niet mee aan het Rode Lantaarn Klassement? Sla deze stap dan gewoon over.
+        </div>
+        <div class="flex items-center gap-2 mb-3 border border-gray-200 rounded-xl px-3 py-2">
+          <i class="bi bi-search text-gray-400"></i>
+          <input type="text" id="search-rood-pub" placeholder="Zoek renner op naam…"
+                 class="flex-1 text-sm focus:outline-none bg-transparent">
+          <button type="button" onclick="clearSearch('search-rood-pub','grid-rood-pub')"
+                  class="text-xs text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="rider-grid rood-grid" id="grid-rood-pub">
+          {% for r in riders %}
+          <label id="lbl-rood-{{ r.id }}">
+            <input type="checkbox" name="rood_riders" value="{{ r.id }}" class="rood-pub-cb">
+            <span>{{ r.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-4">
+      <button type="button" onclick="goToStep(2)"
+              class="border border-gray-300 text-gray-600 px-6 py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+        ← Terug
+      </button>
+      <button type="button" onclick="clearRood()"
+              class="border border-red-200 text-red-500 px-4 py-3 rounded-xl text-sm hover:bg-red-50 transition-colors">
+        Geen rood team
+      </button>
+      <button type="button" onclick="nextStep(3)"
+              class="flex-1 bg-red-600 text-white font-bold px-4 py-3 rounded-xl hover:bg-red-700 transition-colors">
+        Volgende {% if questions %}→{% else %}: Bevestigen →{% endif %}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Stap 4: Bonusvragen (als er vragen zijn) ── -->
+  {% if questions %}
+  <div id="step-4" class="step-content hidden">
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-900">
+        <span class="font-semibold text-tdf-yellow">🎯 Bonusvragen – elk goed antwoord levert 15 punten op</span>
+      </div>
+      <div class="p-5 space-y-5">
+        {% for q in questions %}
+        <div class="border border-gray-200 rounded-xl p-4">
+          <label class="block text-sm font-semibold text-gray-800 mb-2">
+            Vraag {{ q.number }}: {{ q.question }}
+            <span class="text-xs text-gray-400 font-normal ml-1">(optioneel)</span>
+          </label>
+          <input type="text" name="bonus_{{ q.id }}" placeholder="Jouw antwoord…"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex gap-3 mt-4">
+      <button type="button" onclick="goToStep(3)"
+              class="border border-gray-300 text-gray-600 px-6 py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+        ← Terug
+      </button>
+      <button type="button" onclick="nextStep(4)"
+              class="flex-1 bg-zinc-900 text-tdf-yellow font-bold px-4 py-3 rounded-xl hover:bg-zinc-800 transition-colors">
+        Volgende: Bevestigen →
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Stap 5 (of 4 zonder bonus): Overzicht & bevestigen ── -->
+  <div id="step-{% if questions %}5{% else %}4{% endif %}" class="step-content hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Overzicht -->
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-900">
+          <span class="font-semibold text-tdf-yellow">✅ Controleer je inschrijving</span>
+        </div>
+        <div class="divide-y divide-gray-100">
+          <div class="p-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Deelnemer</div>
+            <div id="overzicht-naam" class="font-bold text-gray-900">—</div>
+            <div id="overzicht-afdeling" class="text-sm text-gray-500">—</div>
+          </div>
+          <div class="p-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">🟡 Geel team (<span id="ov-geel-count">0</span>/15)</div>
+            <div id="overzicht-geel" class="text-xs text-gray-600 columns-2 gap-2 space-y-0.5"></div>
+          </div>
+          <div class="p-4" id="ov-rood-section">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">🔴 Rood team (<span id="ov-rood-count">0</span>/15)</div>
+            <div id="overzicht-rood" class="text-xs text-gray-600 columns-2 gap-2 space-y-0.5"></div>
+          </div>
+          {% if questions %}
+          <div class="p-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">🎯 Bonusvragen</div>
+            <div id="overzicht-bonus" class="text-xs text-gray-600 space-y-1"></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Bevestig knop -->
+      <div class="space-y-4">
+        <div class="bg-tdf-yellow/10 border border-tdf-yellow/30 rounded-2xl p-5">
+          <h3 class="font-bold text-gray-900 mb-3">📋 Bijna klaar!</h3>
+          <ul class="text-sm text-gray-600 space-y-1.5">
+            <li class="flex items-start gap-2">
+              <span class="text-green-500 mt-0.5">✓</span>
+              Controleer je selectie links
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-500 mt-0.5">✓</span>
+              Zorg dat je precies 15 renners hebt gekozen voor je geel team
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-amber-500 mt-0.5">€</span>
+              Vergeet het inschrijfgeld niet: <strong>{{ inschrijfgeld }}</strong>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-400 mt-0.5">⏰</span>
+              Deadline: <strong>vrijdag 3 juli 2026, 17:00</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div id="submit-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"></div>
+
+        <div class="flex gap-3">
+          <button type="button" onclick="goToStep({% if questions %}4{% else %}3{% endif %})"
+                  class="border border-gray-300 text-gray-600 px-4 py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+            ← Terug
+          </button>
+          <button type="submit" id="submit-btn"
+                  class="flex-1 bg-green-600 text-white font-bold px-4 py-4 rounded-xl hover:bg-green-700 transition-colors text-lg">
+            🎉 Inschrijving bevestigen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MAX_GEEL = {{ max_geel }};
+const MAX_ROOD = {{ max_rood }};
+const HAS_BONUS = {{ 'true' if questions else 'false' }};
+const LAST_STEP = HAS_BONUS ? 5 : 4;
+
+// ── Step navigation ──────────────────────────────────────────────────────────
+let currentStep = 1;
+
+function goToStep(n) {
+  document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById('step-' + n).classList.remove('hidden');
+
+  document.querySelectorAll('.step-btn').forEach(btn => {
+    const num = parseInt(btn.id.replace('step-btn-', ''));
+    btn.className = btn.className.replace(/bg-tdf-yellow text-zinc-900|text-gray-400/g, '').trim();
+    if (num === n) {
+      btn.classList.add('bg-tdf-yellow', 'text-zinc-900');
+    } else {
+      btn.classList.add('text-gray-400');
+    }
+  });
+
+  currentStep = n;
+  if (n === LAST_STEP) updateOverview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep(from) {
+  if (from === 1) {
+    const naam = document.getElementById('inp-naam').value.trim();
+    const afd  = document.getElementById('inp-afdeling').value.trim();
+    if (!naam || !afd) {
+      alert('Vul je naam én afdeling in.');
+      return;
+    }
+  }
+  if (from === 2) {
+    const n = document.querySelectorAll('.geel-pub-cb:checked').length;
+    if (n !== MAX_GEEL) {
+      alert(`Kies precies ${MAX_GEEL} renners voor je geel team. Nu geselecteerd: ${n}.`);
+      return;
+    }
+  }
+  if (from === 3) {
+    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
+    if (n > 0 && n !== MAX_ROOD) {
+      alert(`Kies precies ${MAX_ROOD} renners voor je rood team, of laat het leeg.`);
+      return;
+    }
+  }
+  goToStep(from + 1);
+}
+
+// ── Counters ──────────────────────────────────────────────────────────────────
+function updateCounter(cls, elId, max) {
+  const n = document.querySelectorAll('.' + cls + ':checked').length;
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = `${n} / ${max}`;
+  el.className = el.className.replace(/bg-\S+|text-\S+(?=\s|$)/g, '').trim();
+  if (n === max)      el.classList.add('bg-green-600','text-white');
+  else if (n > max)   el.classList.add('bg-red-600','text-white');
+  else                el.classList.add('bg-zinc-900','text-tdf-yellow');
+}
+
+document.querySelectorAll('.geel-pub-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const n = document.querySelectorAll('.geel-pub-cb:checked').length;
+    if (n > MAX_GEEL) { cb.checked = false; }
+    // Disable in rood if checked in geel
+    syncCrossTeam();
+    updateCounter('geel-pub-cb', 'geel-counter', MAX_GEEL);
+  });
+});
+
+document.querySelectorAll('.rood-pub-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
+    if (n > MAX_ROOD) { cb.checked = false; }
+    syncCrossTeam();
+    updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+  });
+});
+
+function syncCrossTeam() {
+  // Renner in geel → disable in rood, vice versa
+  const geelVals = new Set([...document.querySelectorAll('.geel-pub-cb:checked')].map(c => c.value));
+  const roodVals = new Set([...document.querySelectorAll('.rood-pub-cb:checked')].map(c => c.value));
+  document.querySelectorAll('.geel-pub-cb').forEach(cb => {
+    cb.disabled = roodVals.has(cb.value) && !cb.checked;
+    document.querySelector(`#lbl-geel-${cb.value} span`).style.opacity = cb.disabled ? '0.3' : '1';
+  });
+  document.querySelectorAll('.rood-pub-cb').forEach(cb => {
+    cb.disabled = geelVals.has(cb.value) && !cb.checked;
+    document.querySelector(`#lbl-rood-${cb.value} span`).style.opacity = cb.disabled ? '0.3' : '1';
+  });
+}
+
+function clearRood() {
+  document.querySelectorAll('.rood-pub-cb:checked').forEach(cb => cb.checked = false);
+  syncCrossTeam();
+  updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+  goToStep(HAS_BONUS ? 4 : 4);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function setupSearch(inputId, gridId) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    const q = inp.value.toLowerCase();
+    document.querySelectorAll('#' + gridId + ' label').forEach(l => {
+      l.style.display = l.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+function clearSearch(inputId, gridId) {
+  document.getElementById(inputId).value = '';
+  document.querySelectorAll('#' + gridId + ' label').forEach(l => l.style.display = '');
+}
+setupSearch('search-geel-pub', 'grid-geel-pub');
+setupSearch('search-rood-pub', 'grid-rood-pub');
+
+// ── Overzicht ─────────────────────────────────────────────────────────────────
+function updateOverview() {
+  document.getElementById('overzicht-naam').textContent = document.getElementById('inp-naam').value || '—';
+  document.getElementById('overzicht-afdeling').textContent = document.getElementById('inp-afdeling').value || '—';
+
+  const geelCbs = [...document.querySelectorAll('.geel-pub-cb:checked')];
+  document.getElementById('ov-geel-count').textContent = geelCbs.length;
+  document.getElementById('overzicht-geel').innerHTML =
+    geelCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
+
+  const roodCbs = [...document.querySelectorAll('.rood-pub-cb:checked')];
+  document.getElementById('ov-rood-count').textContent = roodCbs.length;
+  const roodSec = document.getElementById('ov-rood-section');
+  if (roodCbs.length === 0) {
+    roodSec.innerHTML = '<div class="p-4 text-xs text-gray-400 italic">Geen rood team ingeschreven.</div>';
+  } else {
+    document.getElementById('overzicht-rood').innerHTML =
+      roodCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
+  }
+
+  if (HAS_BONUS) {
+    const bonusDiv = document.getElementById('overzicht-bonus');
+    if (bonusDiv) {
+      const inputs = document.querySelectorAll('[name^="bonus_"]');
+      bonusDiv.innerHTML = [...inputs].map(inp => {
+        const label = inp.previousElementSibling || inp.closest('.border').querySelector('label');
+        const q = label ? label.textContent.trim().split('\n')[0] : 'Vraag';
+        return `<div><strong>${q.substring(0,50)}</strong>: ${inp.value || '<em>niet ingevuld</em>'}</div>`;
+      }).join('');
+    }
+  }
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+const deadline = new Date('2026-07-03T17:00:00');
+function updateCountdown() {
+  const diff = deadline - new Date();
+  if (diff <= 0) { document.getElementById('countdown') && (document.getElementById('countdown').textContent = 'Inschrijving gesloten'); return; }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const el = document.getElementById('countdown');
+  if (el) el.textContent = `Nog ${d}d ${h}u ${m}m`;
+}
+updateCountdown();
+setInterval(updateCountdown, 60000);
+</script>
+{% endblock %}

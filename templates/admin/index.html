@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Admin – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">⚙️ Admin Dashboard</h1>
+    <p class="text-gray-400 mt-1">Beheer deelnemers, teams en resultaten</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-6">
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {% for val, label in [(n_participants,'Deelnemers'),(n_riders,'Renners'),(n_stages,'Etappes ingevoerd'),(n_questions,'Bonusvragen')] %}
+    <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+      <div class="text-4xl font-extrabold text-tdf-yellow">{{ val }}</div>
+      <div class="text-sm text-gray-500 mt-1">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Action cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">📋 Setup</div>
+      <div class="p-4 space-y-2">
+        <a href="{{ url_for('admin_deelnemers') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-people text-gray-400"></i> Deelnemers & Clusters
+        </a>
+        <a href="{{ url_for('admin_import_csv') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-file-earmark-spreadsheet text-gray-400"></i> Importeer via CSV
+        </a>
+        <a href="{{ url_for('admin_renners') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-bicycle text-gray-400"></i> Renners beheren
+        </a>
+        <a href="{{ url_for('admin_teams') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-list-check text-gray-400"></i> Teams invoeren
+        </a>
+        <a href="{{ url_for('admin_import_teams') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-magic text-gray-400"></i> Teams import via CSV
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">🏁 Resultaten</div>
+      <div class="p-4 space-y-2">
+        <a href="{{ url_for('admin_etappe') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-flag text-gray-400"></i> Etapperesultaten invoeren
+        </a>
+        <a href="{{ url_for('admin_eindklassement') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-trophy text-gray-400"></i> Eindklassementen
+        </a>
+        <a href="{{ url_for('admin_bonusvragen') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
+          <i class="bi bi-question-circle text-gray-400"></i> Bonusvragen
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">👁️ Bekijken</div>
+      <div class="p-4 space-y-2">
+        <a href="{{ url_for('index') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-tdf-yellow text-zinc-900 hover:bg-yellow-300 transition-colors text-sm font-semibold">
+          <i class="bi bi-house"></i> Naar de website
+        </a>
+        <a href="{{ url_for('geel_klassement') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 transition-colors text-sm font-medium">
+          🟡 Geel klassement
+        </a>
+        <a href="{{ url_for('rood_klassement') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 transition-colors text-sm font-medium">
+          🔴 Rode Lantaarn
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Handleiding -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">📖 Snelle handleiding</div>
+    <ol class="p-5 space-y-2 text-sm text-gray-600 list-decimal list-inside">
+      <li><strong class="text-gray-800">Deelnemers & Clusters:</strong> Voeg alle deelnemers toe en deel ze in per cluster.</li>
+      <li><strong class="text-gray-800">Renners:</strong> Voeg de TdF 2026 startlijst toe (bulk-import mogelijk).</li>
+      <li><strong class="text-gray-800">Teams:</strong> Voer per deelnemer de 15 geel-renners in en optioneel 15 rood-renners.</li>
+      <li><strong class="text-gray-800">Etapperesultaten:</strong> Voer na elke etappe de top-15 en truidragers in.</li>
+      <li><strong class="text-gray-800">Eindklassementen:</strong> Na de Tour: voer de eindstanden in voor geel, groen, bollen en wit.</li>
+      <li><strong class="text-gray-800">Bonusvragen:</strong> Voer vragen in en markeer wie correct heeft geantwoord.</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

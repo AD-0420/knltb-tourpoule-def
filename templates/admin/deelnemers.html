@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Deelnemers – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">👥 Deelnemers & Clusters</h1>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Clusters -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Clusters</div>
+        <div class="p-4">
+          <form method="post" class="flex gap-2 mb-4">
+            <input type="hidden" name="action" value="add_cluster">
+            <input type="text" name="cluster_name" placeholder="Naam cluster" required
+                   class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            <button class="bg-tdf-yellow text-zinc-900 font-semibold px-3 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors whitespace-nowrap">
+              + Toevoegen
+            </button>
+          </form>
+          {% if clusters %}
+          <ul class="divide-y divide-gray-100">
+            {% for c in clusters %}
+            <li class="flex items-center justify-between py-2">
+              <span class="text-sm text-gray-700">
+                {{ c.name }}
+                <span class="text-gray-400 text-xs ml-1">({{ c.participants|length }})</span>
+              </span>
+              <form method="post" onsubmit="return confirm('Cluster verwijderen?')">
+                <input type="hidden" name="action" value="delete_cluster">
+                <input type="hidden" name="cluster_id_del" value="{{ c.id }}">
+                <button class="text-xs text-red-400 hover:text-red-600 transition-colors">✕</button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-sm text-gray-400">Nog geen clusters.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Add + list participants -->
+    <div class="md:col-span-2 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 bg-zinc-800">
+          <span class="font-semibold text-white">Deelnemer toevoegen</span>
+          <a href="{{ url_for('admin_import_csv') }}"
+             class="text-xs bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
+            <i class="bi bi-file-earmark-spreadsheet mr-1"></i> Importeer CSV
+          </a>
+        </div>
+        <div class="p-4 space-y-4">
+          <!-- Single add -->
+          <form method="post" class="flex gap-2 flex-wrap">
+            <input type="hidden" name="action" value="add_participant">
+            <input type="text" name="name" placeholder="Naam deelnemer" required
+                   class="flex-1 min-w-[160px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            <select name="cluster_id"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+              <option value="">— Geen cluster —</option>
+              {% for c in clusters %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+            <button class="bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+              Toevoegen
+            </button>
+          </form>
+          <hr class="border-gray-100">
+          <!-- Bulk add -->
+          <form method="post">
+            <input type="hidden" name="action" value="bulk_add">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Bulk toevoegen (één naam per regel)</label>
+            <div class="flex gap-2 flex-wrap">
+              <textarea name="names" rows="4" placeholder="Naam 1&#10;Naam 2&#10;Naam 3"
+                        class="flex-1 min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow"></textarea>
+              <div class="flex flex-col gap-2">
+                <select name="cluster_id"
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                  <option value="">— Geen cluster —</option>
+                  {% for c in clusters %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                  {% endfor %}
+                </select>
+                <button class="bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+                  Bulk toevoegen
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Participants table -->
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">
+          Deelnemers ({{ participants|length }})
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-tdf-yellow uppercase tracking-wider bg-zinc-900">
+              <th class="pl-4 py-3">Naam</th>
+              <th class="py-3">Cluster</th>
+              <th class="py-3 text-center">Geel</th>
+              <th class="py-3 text-center">Rood</th>
+              <th class="pr-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for p in participants %}
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="pl-4 py-2.5 font-semibold text-gray-900">{{ p.name }}</td>
+              <td class="py-2.5 text-gray-400">{{ p.cluster.name if p.cluster else '—' }}</td>
+              <td class="py-2.5 text-center">
+                {% set g = p.selections|selectattr('type','eq','geel')|list|length %}
+                <span class="counter-{% if g == 15 %}ok{% elif g > 0 %}warn{% else %}ok{% endif %}">{{ g }}/15</span>
+              </td>
+              <td class="py-2.5 text-center">
+                {% set r = p.selections|selectattr('type','eq','rood')|list|length %}
+                {% if r > 0 %}
+                  <span class="counter-{% if r == 15 %}ok{% else %}warn{% endif %}">{{ r }}/15</span>
+                {% else %}
+                  <span class="text-gray-300">—</span>
+                {% endif %}
+              </td>
+              <td class="pr-4 py-2.5 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <a href="{{ url_for('admin_teams', pid=p.id) }}"
+                     class="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded hover:bg-gray-50 transition-colors">
+                    Team
+                  </a>
+                  <form method="post" onsubmit="return confirm('{{ p.name }} verwijderen?')">
+                    <input type="hidden" name="action" value="delete_participant">
+                    <input type="hidden" name="participant_id" value="{{ p.id }}">
+                    <button class="text-xs text-red-400 hover:text-red-600 transition-colors px-1">✕</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-gray-400 py-8">Nog geen deelnemers.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

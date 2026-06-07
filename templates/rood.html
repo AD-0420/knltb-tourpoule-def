@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Rode Lantaarn – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-red-400">🔴 Rode Lantaarn Klassement</h1>
+    <p class="text-gray-400 mt-1">Zo <strong class="text-white">weinig mogelijk</strong> punten – de laagste score wint!</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-6">
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-red-600">
+      <span class="font-bold text-white"><i class="bi bi-trophy mr-2"></i>Klassement Rode Lantaarn</span>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="bg-zinc-900 text-left text-xs font-semibold text-tdf-yellow uppercase tracking-wider">
+          <th class="pl-4 py-3 w-14">#</th>
+          <th class="py-3">Deelnemer</th>
+          <th class="py-3 text-gray-400">Cluster</th>
+          <th class="pr-4 py-3 text-right">Punten <span class="text-gray-500 normal-case font-normal">(lager = beter)</span></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for s in standings %}
+        <tr class="hover:bg-red-50 transition-colors {% if loop.index == 1 %}bg-red-50{% endif %}">
+          <td class="pl-4 py-3">
+            <span class="rank-badge rank-{% if s.rank <= 3 %}{{ s.rank }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+              {{ s.rank }}
+            </span>
+          </td>
+          <td class="py-3">
+            <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-semibold text-gray-900 hover:text-red-600">
+              {{ s.participant.name }}
+            </a>
+            {% if loop.index == 1 %}
+              <span class="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">🔴 Rode Lantaarn</span>
+            {% endif %}
+          </td>
+          <td class="py-3 text-sm text-gray-400">{{ s.participant.cluster.name if s.participant.cluster else '—' }}</td>
+          <td class="pr-4 py-3 text-right"><span class="pts-badge-rood">{{ s.rood }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-gray-400 py-8">Geen Rode Lantaarn deelnemers.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bg-red-50 border border-red-200 rounded-2xl p-5">
+    <h3 class="font-bold text-red-700 mb-2">🔴 Hoe werkt de Rode Lantaarn?</h3>
+    <p class="text-sm text-red-600">
+      Kies 15 renners die zo <strong>min mogelijk</strong> punten scoren in de Tour.
+      Dezelfde puntentelling als het geel klassement, maar de deelnemer met de <strong>laagste score</strong> wint.
+      Kies domestiques, sprinters in bergritten of renners die niet in de top-15 eindigen.
+      Bonusvragen tellen <em>niet</em> mee.
+    </p>
+  </div>
+</div>
+{% endblock %}

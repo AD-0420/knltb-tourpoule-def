@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Etappes – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🚩 Etapperesultaten</h1>
+    <p class="text-gray-400 mt-1">{{ stage_data|length }} van 21 etappes ingevoerd</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-3">
+  {% if not stage_data %}
+  <div class="bg-white rounded-2xl shadow-sm text-center py-16 text-gray-400">
+    <div class="text-5xl mb-3">🚩</div>
+    <p>Nog geen etapperesultaten ingevoerd.<br>
+      <a href="{{ url_for('admin_etappe') }}" class="text-amber-500 hover:underline">Ga naar admin</a> om resultaten in te voeren.
+    </p>
+  </div>
+  {% endif %}
+
+  {% for sd in stage_data %}
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <!-- Header (clickable toggle) -->
+    <button class="w-full text-left flex items-center justify-between px-5 py-4 bg-zinc-900 hover:bg-zinc-800 transition-colors"
+            onclick="toggleStage({{ sd.stage.number }})">
+      <div class="flex items-center gap-4">
+        <span class="text-3xl font-extrabold text-tdf-yellow leading-none">{{ sd.stage.number }}</span>
+        <span class="font-semibold text-white">Etappe {{ sd.stage.number }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        {% for jersey_type, rider in sd.jerseys.items() %}
+        <span class="jersey-badge jersey-{{ jersey_type }} text-xs px-2 py-0.5 rounded font-semibold"
+              title="{{ jersey_labels[jersey_type] }}">
+          {{ rider.name.split()[0] }}
+        </span>
+        {% endfor %}
+        {% if sd.results %}
+        <span class="text-xs bg-tdf-yellow text-zinc-900 font-semibold px-2 py-0.5 rounded">
+          🥇 {{ sd.results[0].rider.name }}
+        </span>
+        {% endif %}
+        <i class="bi bi-chevron-down text-gray-400 ml-1" id="chevron-{{ sd.stage.number }}"></i>
+      </div>
+    </button>
+
+    <!-- Collapsible body -->
+    <div id="stage-{{ sd.stage.number }}" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3">
+        <!-- Results -->
+        <div class="md:col-span-2 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-left text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                <th class="pl-4 py-2 w-16">Pos.</th>
+                <th class="py-2">Renner</th>
+                <th class="pr-4 py-2 text-right">Punten</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {% for result in sd.results %}
+              <tr class="hover:bg-yellow-50 transition-colors {% if loop.index == 1 %}bg-yellow-50{% endif %}">
+                <td class="pl-4 py-2 font-bold {% if loop.index == 1 %}text-amber-500{% else %}text-gray-400{% endif %}">
+                  {{ result.position }}
+                </td>
+                <td class="py-2 font-medium">{{ result.rider.name }}</td>
+                <td class="pr-4 py-2 text-right">
+                  <span class="pts-badge text-xs">{{ points_table[result.position] }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <!-- Jerseys -->
+        <div class="border-t md:border-t-0 md:border-l border-gray-100 p-4">
+          <h4 class="font-semibold text-gray-700 mb-3 text-sm">Truidragers</h4>
+          <div class="space-y-2">
+            {% for jersey_type, label in jersey_labels.items() %}
+            <div class="flex items-center justify-between gap-2">
+              <span class="jersey-badge jersey-{{ jersey_type }} text-xs px-2 py-1 rounded font-semibold min-w-[95px] text-center">
+                {{ label }}
+              </span>
+              {% if sd.jerseys[jersey_type] is defined %}
+                <span class="text-sm text-gray-700 flex-1">{{ sd.jerseys[jersey_type].name }}</span>
+                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">+1 pt</span>
+              {% else %}
+                <span class="text-gray-400 text-sm">—</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleStage(n) {
+  const el = document.getElementById('stage-'+n);
+  const ch = document.getElementById('chevron-'+n);
+  el.classList.toggle('hidden');
+  ch.classList.toggle('rotate-180');
+}
+</script>
+{% endblock %}

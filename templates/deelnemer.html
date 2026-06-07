@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-white">{{ p.name }}</h1>
+        <p class="text-gray-400 mt-1">
+          {% if p.cluster %}<span class="text-gray-300">{{ p.cluster.name }}</span> &mdash; {% endif %}
+          <span class="text-tdf-yellow font-semibold">{{ geel_total }} pts</span> geel
+          {% if rood_total is not none %}
+            &mdash; <span class="text-red-400 font-semibold">{{ rood_total }} pts</span> rood
+          {% endif %}
+        </p>
+      </div>
+      <!-- Deelnemer switcher -->
+      <select onchange="location.href='/deelnemer/'+this.value"
+              class="bg-zinc-800 text-gray-200 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+        {% for part in participants %}
+        <option value="{{ part.id }}" {% if part.id == p.id %}selected{% endif %}>{{ part.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Geel team -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-tdf-yellow">
+        <span class="font-bold text-zinc-900">🟡 Geel Team ({{ geel_team|length }} renners)</span>
+        <span class="pts-badge">{{ geel_total }} pts</span>
+      </div>
+      {% if geel_team %}
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-gray-400 uppercase tracking-wide bg-gray-50 border-b border-gray-100">
+            <th class="pl-4 py-2 w-8">#</th>
+            <th class="py-2">Renner</th>
+            <th class="pr-4 py-2 text-right">Punten</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for item in geel_team %}
+          <tr class="hover:bg-yellow-50 transition-colors">
+            <td class="pl-4 py-2 text-gray-400">{{ loop.index }}</td>
+            <td class="py-2 font-medium">{{ item.rider.name }}</td>
+            <td class="pr-4 py-2 text-right">
+              {% if item.points > 0 %}
+                <span class="pts-badge text-xs">{{ item.points }}</span>
+              {% else %}
+                <span class="text-gray-300">0</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="border-t border-gray-200">
+          <tr class="bg-gray-50">
+            <td colspan="2" class="pl-4 py-2 text-sm font-medium text-gray-600">Renners subtotaal</td>
+            <td class="pr-4 py-2 text-right font-bold">{{ geel_team | sum(attribute='points') }}</td>
+          </tr>
+          {% if questions %}
+          {% set bonus_total = namespace(val=0) %}
+          {% for q in questions %}{% if answers.get(q.id) %}{% set bonus_total.val = bonus_total.val + 15 %}{% endif %}{% endfor %}
+          <tr class="bg-green-50">
+            <td colspan="2" class="pl-4 py-2 text-sm font-medium text-green-700">
+              🎯 Bonusvragen ({{ answers.values()|select|list|length }}/{{ questions|length }})
+            </td>
+            <td class="pr-4 py-2 text-right font-semibold text-green-700">+{{ bonus_total.val }}</td>
+          </tr>
+          {% endif %}
+          <tr class="bg-yellow-50">
+            <td colspan="2" class="pl-4 py-2 font-bold">Totaal</td>
+            <td class="pr-4 py-2 text-right"><span class="pts-badge">{{ geel_total }}</span></td>
+          </tr>
+        </tfoot>
+      </table>
+      {% else %}
+      <div class="text-center text-gray-400 py-8 text-sm">Nog geen geel team ingevoerd.</div>
+      {% endif %}
+    </div>
+
+    <!-- Right column: rood + bonus -->
+    <div class="space-y-6">
+      {% if rood_team %}
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 bg-red-600">
+          <span class="font-bold text-white">🔴 Rood Team ({{ rood_team|length }} renners)</span>
+          <span class="pts-badge-rood">{{ rood_total }} pts</span>
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-gray-400 uppercase tracking-wide bg-gray-50 border-b border-gray-100">
+              <th class="pl-4 py-2 w-8">#</th>
+              <th class="py-2">Renner</th>
+              <th class="pr-4 py-2 text-right">Punten <span class="normal-case text-gray-300">(lager=beter)</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for item in rood_team %}
+            <tr class="hover:bg-red-50 transition-colors">
+              <td class="pl-4 py-2 text-gray-400">{{ loop.index }}</td>
+              <td class="py-2 font-medium">{{ item.rider.name }}</td>
+              <td class="pr-4 py-2 text-right {% if item.points == 0 %}text-green-600 font-bold{% else %}text-gray-400{% endif %}">
+                {{ item.points }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="bg-red-50 border-t border-gray-200">
+              <td colspan="2" class="pl-4 py-2 font-bold">Totaal</td>
+              <td class="pr-4 py-2 text-right"><span class="pts-badge-rood">{{ rood_total }}</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% endif %}
+
+      {% if questions %}
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-900">
+          <span class="font-semibold text-tdf-yellow">🎯 Bonusvragen</span>
+        </div>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-gray-100">
+            {% for q in questions %}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="pl-4 py-3 w-8 text-gray-400 font-mono text-xs">{{ q.number }}</td>
+              <td class="py-3 text-gray-700">{{ q.question or '(geen tekst)' }}</td>
+              <td class="pr-4 py-3 text-right whitespace-nowrap">
+                {% if answers.get(q.id) %}
+                  <span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✓ +15 pts</span>
+                {% else %}
+                  <span class="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">✗ 0 pts</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

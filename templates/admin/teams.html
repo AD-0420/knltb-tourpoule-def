@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Teams invoeren – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">📋 Teams invoeren</h1>
+    <p class="text-gray-400 mt-1">Selecteer per deelnemer 15 renners voor geel en optioneel 15 voor rood</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-4">
+  <!-- Participant selector -->
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <div class="flex flex-wrap gap-2">
+      {% for p in participants %}
+      {% set g = p.selections|selectattr('type','eq','geel')|list|length %}
+      {% set r = p.selections|selectattr('type','eq','rood')|list|length %}
+      <a href="{{ url_for('admin_teams', pid=p.id) }}"
+         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                {% if current and current.id == p.id %}bg-tdf-yellow text-zinc-900{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+        {{ p.name }}
+        <span class="text-xs {% if current and current.id == p.id %}bg-zinc-900 text-tdf-yellow{% else %}bg-gray-300 text-gray-600{% endif %} px-1.5 py-0.5 rounded-full">
+          {{ g }}G
+        </span>
+        {% if r > 0 %}
+        <span class="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{{ r }}R</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if current %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Geel team -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-tdf-yellow">
+        <span class="font-bold text-zinc-900">🟡 Geel Team – {{ current.name }}</span>
+        <span id="geel-count" class="counter-warn text-xs">0/{{ max_geel }}</span>
+      </div>
+      <div class="p-4">
+        <form method="post" id="form-geel">
+          <input type="hidden" name="participant_id" value="{{ current.id }}">
+          <input type="hidden" name="type" value="geel">
+          <div class="flex items-center gap-2 mb-3 border border-gray-300 rounded-lg px-3 py-2">
+            <i class="bi bi-search text-gray-400 text-sm"></i>
+            <input type="text" id="search-geel" placeholder="Zoek renner..."
+                   class="flex-1 text-sm focus:outline-none bg-transparent">
+          </div>
+          <div class="rider-grid" id="grid-geel">
+            {% for r in riders %}
+            <label>
+              <input type="checkbox" name="rider_ids" value="{{ r.id }}" class="geel-checkbox"
+                     {% if r.id in geel_ids %}checked{% endif %}
+                     {% if r.id in rood_ids %}disabled title="Al in rood team"{% endif %}>
+              <span class="{% if r.id in rood_ids %}text-gray-300{% endif %}">{{ r.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button type="submit" class="flex-1 bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+              <i class="bi bi-save mr-1"></i> Geel team opslaan
+            </button>
+            <button type="button" onclick="clearChecks('form-geel')"
+                    class="border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              Wis
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rood team -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 bg-red-600">
+        <span class="font-bold text-white">🔴 Rood Team – {{ current.name }}</span>
+        <span id="rood-count" class="counter-warn text-xs">0/{{ max_rood }}</span>
+      </div>
+      <div class="p-4">
+        <form method="post" id="form-rood">
+          <input type="hidden" name="participant_id" value="{{ current.id }}">
+          <input type="hidden" name="type" value="rood">
+          <div class="flex items-center gap-2 mb-3 border border-gray-300 rounded-lg px-3 py-2">
+            <i class="bi bi-search text-gray-400 text-sm"></i>
+            <input type="text" id="search-rood" placeholder="Zoek renner..."
+                   class="flex-1 text-sm focus:outline-none bg-transparent">
+          </div>
+          <div class="rider-grid rood-grid" id="grid-rood">
+            {% for r in riders %}
+            <label>
+              <input type="checkbox" name="rider_ids" value="{{ r.id }}" class="rood-checkbox"
+                     {% if r.id in rood_ids %}checked{% endif %}
+                     {% if r.id in geel_ids %}disabled title="Al in geel team"{% endif %}>
+              <span class="{% if r.id in geel_ids %}text-gray-300{% endif %}">{{ r.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button type="submit" class="flex-1 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
+              <i class="bi bi-save mr-1"></i> Rood team opslaan
+            </button>
+            <button type="button" onclick="clearChecks('form-rood')"
+                    class="border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              Wis
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white rounded-2xl shadow-sm text-center py-12 text-gray-400">Selecteer een deelnemer hierboven.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const maxGeel = {{ max_geel }}, maxRood = {{ max_rood }};
+function updateCount(fid, cid, max) {
+  const n = document.querySelectorAll(`#${fid} input[type=checkbox]:checked`).length;
+  const el = document.getElementById(cid);
+  el.textContent = `${n}/${max}`;
+  el.className = n > max ? 'counter-over text-xs' : n === max ? 'counter-ok text-xs' : 'counter-warn text-xs';
+}
+function clearChecks(fid) {
+  document.querySelectorAll(`#${fid} input[type=checkbox]:checked`).forEach(c => c.checked = false);
+  updateCount(fid, fid === 'form-geel' ? 'geel-count' : 'rood-count', fid === 'form-geel' ? maxGeel : maxRood);
+}
+function setupSearch(sid, gid) {
+  const inp = document.getElementById(sid);
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    const q = inp.value.toLowerCase();
+    document.querySelectorAll(`#${gid} label`).forEach(l => l.style.display = l.textContent.toLowerCase().includes(q) ? '' : 'none');
+  });
+}
+[['form-geel','geel-count',maxGeel,'.geel-checkbox'],['form-rood','rood-count',maxRood,'.rood-checkbox']].forEach(([fid,cid,max,cls]) => {
+  document.querySelectorAll(cls).forEach(cb => {
+    cb.addEventListener('change', function() {
+      const n = document.querySelectorAll(`#${fid} input[type=checkbox]:checked`).length;
+      if (n > max) { this.checked = false; }
+      updateCount(fid, cid, max);
+    });
+  });
+  updateCount(fid, cid, max);
+});
+setupSearch('search-geel','grid-geel');
+setupSearch('search-rood','grid-rood');
+</script>
+{% endblock %}

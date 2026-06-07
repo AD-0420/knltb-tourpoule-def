@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}CSV Import – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">📥 Deelnemers importeren via CSV</h1>
+    <p class="text-gray-400 mt-1">Importeer inschrijvingen uit Google Forms / Google Sheets</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Stap 1 – Export uit Google Sheets</div>
+        <ol class="p-5 space-y-2 text-sm text-gray-600 list-decimal list-inside">
+          <li>Open de Google Sheet met inschrijvingen (Forms → Reacties → tabblad Spreadsheet).</li>
+          <li>Klik op <strong>Bestand → Downloaden → CSV</strong>.</li>
+          <li>Upload het CSV bestand hieronder.</li>
+        </ol>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Stap 2 – CSV uploaden</div>
+        <div class="p-5">
+          <form method="post" enctype="multipart/form-data" class="space-y-3">
+            <input type="hidden" name="action" value="upload">
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">CSV bestand</label>
+              <input type="file" name="csvfile" accept=".csv" required
+                     class="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-tdf-yellow file:text-zinc-900 hover:file:bg-yellow-300 transition-colors border border-gray-200 rounded-lg p-1">
+              <p class="text-xs text-gray-400 mt-1">Ondersteunt UTF-8 en Excel-export (BOM).</p>
+            </div>
+            <button class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-yellow-300 transition-colors">
+              <i class="bi bi-upload mr-1"></i> Uploaden & preview
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      {% if columns %}
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Stap 3 – Kolomkoppeling</div>
+        <div class="p-5">
+          <form method="post" class="space-y-4">
+            <input type="hidden" name="action" value="import">
+            <input type="hidden" name="csv_data" value="{{ csv_data }}">
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                Kolom met <span class="text-amber-600">naam</span> deelnemer
+              </label>
+              <select name="name_col" required
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                <option value="">— kies kolom —</option>
+                {% for col in columns %}
+                <option value="{{ col }}" {% if 'naam' in col.lower() or 'name' in col.lower() %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                Kolom met <span class="text-amber-600">afdeling/cluster</span>
+                <span class="text-gray-400 font-normal">(optioneel)</span>
+              </label>
+              <select name="cluster_col"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                <option value="">— geen / niet van toepassing —</option>
+                {% for col in columns %}
+                <option value="{{ col }}" {% if 'afdeling' in col.lower() or 'cluster' in col.lower() %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                Bonusvraag kolommen
+                <span class="text-gray-400 font-normal">(optioneel, meerdere mogelijk)</span>
+              </label>
+              <div class="border border-gray-200 rounded-xl p-3 space-y-1 max-h-40 overflow-y-auto">
+                {% for col in columns %}
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                  <input type="checkbox" name="bonus_cols" value="{{ col }}" class="accent-amber-500"
+                         {% if 'bonus' in col.lower() or 'vraag' in col.lower() or 'question' in col.lower() %}checked{% endif %}>
+                  {{ col }}
+                </label>
+                {% endfor %}
+              </div>
+              <p class="text-xs text-gray-400 mt-1">Aangevinkte kolommen worden als bonusvragen opgeslagen.</p>
+            </div>
+
+            {% if preview %}
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Preview (eerste 5 rijen)</label>
+              <div class="overflow-x-auto rounded-xl border border-gray-200">
+                <table class="w-full text-xs">
+                  <thead class="bg-zinc-900">
+                    <tr>{% for col in columns %}<th class="px-3 py-2 text-tdf-yellow font-semibold text-left">{{ col }}</th>{% endfor %}</tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100">
+                    {% for row in preview %}
+                    <tr class="hover:bg-gray-50">
+                      {% for col in columns %}<td class="px-3 py-1.5 text-gray-600">{{ row[col][:25] }}</td>{% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+
+            <button type="submit"
+                    class="w-full bg-green-600 text-white font-bold px-4 py-3 rounded-xl text-sm hover:bg-green-700 transition-colors">
+              <i class="bi bi-people-fill mr-1"></i> Deelnemers importeren
+            </button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="bg-white rounded-2xl shadow-sm text-center py-16 text-gray-400">
+        <div class="text-5xl mb-3">📊</div>
+        <p class="text-sm">Upload een CSV bestand om te beginnen.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Etapperesultaten – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🏁 Etapperesultaten invoeren</h1>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-4">
+  <!-- Etappe selector -->
+  <div class="bg-white rounded-2xl shadow-sm p-4">
+    <div class="flex flex-wrap gap-2 items-center">
+      <span class="text-sm font-bold text-gray-600 mr-1">Etappe:</span>
+      {% for n in range(1, 22) %}
+      <a href="{{ url_for('admin_etappe', stage_num=n) }}"
+         class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-semibold transition-colors
+                {% if stage_num == n %}bg-tdf-yellow text-zinc-900
+                {% elif n in completed_stages %}bg-zinc-900 text-tdf-yellow
+                {% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+        {{ n }}{% if n in completed_stages and stage_num != n %}<span class="sr-only"> ✓</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if stage_num %}
+  <form method="post">
+    <input type="hidden" name="stage_num" value="{{ stage_num }}">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+      <!-- Top 15 -->
+      <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">
+          Top 15 – Etappe {{ stage_num }}
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-tdf-yellow uppercase tracking-wider bg-zinc-900">
+              <th class="pl-4 py-3 w-14">Pos.</th>
+              <th class="py-3 w-16">Punten</th>
+              <th class="pr-4 py-3">Renner</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for pos in range(1, 16) %}
+            <tr class="hover:bg-yellow-50 transition-colors">
+              <td class="pl-4 py-2 font-bold {% if pos == 1 %}text-amber-500{% else %}text-gray-400{% endif %}">{{ pos }}</td>
+              <td class="py-2"><span class="pts-badge text-xs">{{ points_table[pos] }}</span></td>
+              <td class="pr-4 py-2">
+                <select name="pos_{{ pos }}"
+                        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                  <option value="">— selecteer renner —</option>
+                  {% for r in riders %}
+                  <option value="{{ r.id }}" {% if current_results.get(pos) == r.id %}selected{% endif %}>
+                    {{ r.name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Jerseys + Save -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">
+            Truidragers na Etappe {{ stage_num }}
+          </div>
+          <div class="p-4 space-y-3">
+            {% for jersey, label in jersey_labels.items() %}
+            <div>
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1">
+                <span class="jersey-badge jersey-{{ jersey }} text-xs px-2 py-0.5 rounded">{{ label }}</span>
+                <span class="text-gray-400 text-xs font-normal">+1 pt</span>
+              </label>
+              <select name="jersey_{{ jersey }}"
+                      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                <option value="">— selecteer drager —</option>
+                {% for r in riders %}
+                <option value="{{ r.id }}" {% if current_jerseys.get(jersey) == r.id %}selected{% endif %}>
+                  {{ r.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
+          <button type="submit"
+                  class="w-full bg-tdf-yellow text-zinc-900 font-bold px-4 py-3 rounded-xl text-sm hover:bg-yellow-300 transition-colors">
+            <i class="bi bi-save mr-2"></i>Etappe {{ stage_num }} opslaan
+          </button>
+          {% if stage_num < 21 %}
+          <a href="{{ url_for('admin_etappe', stage_num=stage_num+1) }}"
+             class="block w-full text-center border border-gray-300 text-gray-600 px-4 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+            Volgende etappe →
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="bg-white rounded-2xl shadow-sm text-center py-12 text-gray-400">
+    Selecteer een etappe hierboven.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

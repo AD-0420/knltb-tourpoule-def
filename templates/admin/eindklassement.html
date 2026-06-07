@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Eindklassementen – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🏆 Eindklassementen</h1>
+    <p class="text-gray-400 mt-1">Top 15 per klassement na afloop van de Tour</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% for jersey, label in jersey_labels.items() %}
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 bg-zinc-900 flex items-center gap-3">
+        <span class="jersey-badge jersey-{{ jersey }} text-xs px-2 py-1 rounded font-semibold">{{ label }}</span>
+        <span class="font-semibold text-white">Eindklassement</span>
+      </div>
+      <form method="post">
+        <input type="hidden" name="jersey_type" value="{{ jersey }}">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-tdf-yellow uppercase tracking-wider bg-zinc-800">
+              <th class="pl-4 py-2 w-12">Pos.</th>
+              <th class="py-2 w-16">Pts</th>
+              <th class="pr-4 py-2">Renner</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for pos in range(1, 16) %}
+            <tr class="hover:bg-yellow-50 transition-colors">
+              <td class="pl-4 py-1.5 font-bold {% if pos == 1 %}text-amber-500{% else %}text-gray-400{% endif %}">{{ pos }}</td>
+              <td class="py-1.5"><span class="pts-badge text-xs">{{ points_table[pos] }}</span></td>
+              <td class="pr-4 py-1.5">
+                <select name="pos_{{ pos }}"
+                        class="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                  <option value="">—</option>
+                  {% for r in riders %}
+                  <option value="{{ r.id }}" {% if current[jersey].get(pos) == r.id %}selected{% endif %}>
+                    {{ r.name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="p-3">
+          <button type="submit"
+                  class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-yellow-300 transition-colors">
+            <i class="bi bi-save mr-1"></i> {{ label }} opslaan
+          </button>
+        </div>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

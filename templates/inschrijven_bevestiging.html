@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Inschrijving bevestigd – KNLTB Tourpoule 2026{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🎉 Inschrijving ontvangen!</h1>
+  </div>
+</div>
+
+<div class="px-6 lg:px-10 pb-12">
+  <div class="max-w-2xl mx-auto space-y-6">
+
+    <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+      <div class="text-6xl mb-4">🚴</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Welkom, {{ naam }}!</h2>
+      <p class="text-gray-500 mb-6">Je inschrijving voor de KNLTB Tourpoule 2026 is succesvol ontvangen.</p>
+
+      {% if p %}
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        {% set geel = p.selections|selectattr('type','eq','geel')|list %}
+        {% set rood = p.selections|selectattr('type','eq','rood')|list %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div class="text-2xl font-extrabold text-tdf-yellow">{{ geel|length }}</div>
+          <div class="text-sm text-gray-600">renners geel team</div>
+        </div>
+        <div class="bg-{% if rood %}red-50 border-red-200{% else %}gray-50 border-gray-200{% endif %} border rounded-xl p-4">
+          <div class="text-2xl font-extrabold {% if rood %}text-red-500{% else %}text-gray-300{% endif %}">
+            {{ rood|length }}
+          </div>
+          <div class="text-sm text-gray-600">renners rood team</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left text-sm text-amber-800 mb-6">
+        <strong>💰 Vergeet het inschrijfgeld niet!</strong><br>
+        Betaal €5,- — de betalingsinformatie wordt apart gecommuniceerd.
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="{{ url_for('geel_klassement') }}"
+           class="bg-tdf-yellow text-zinc-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 transition-colors">
+          🟡 Bekijk de standen
+        </a>
+        {% if p %}
+        <a href="{{ url_for('deelnemer', pid=p.id) }}"
+           class="border border-gray-300 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">
+          Mijn team bekijken →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="bg-zinc-900 rounded-2xl p-5 text-center">
+      <p class="text-gray-400 text-sm">
+        <span class="text-tdf-yellow font-semibold">Tour de France 2026</span> start op zaterdag 4 juli 2026.
+        Houd de standen bij op deze pagina!
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

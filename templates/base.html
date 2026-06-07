@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}KNLTB Tourpoule 2026{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'tdf-yellow': '#FFD700',
+            'knltb-orange': '#F15A22',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-slate-100 text-gray-900 min-h-screen flex flex-col">
+
+<!-- ── Navbar ── -->
+<nav class="bg-zinc-950 border-b-4 border-tdf-yellow sticky top-0 z-50">
+  <div class="px-6 lg:px-10">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Brand -->
+      <a href="{{ url_for('index') }}" class="flex items-center gap-3 flex-shrink-0">
+        <div class="bg-white rounded-lg px-2 py-1 shadow-sm">
+          <img src="{{ url_for('static', filename='knltb-logo.png') }}" alt="KNLTB" class="h-7 w-auto">
+        </div>
+        <span class="text-tdf-yellow font-bold text-lg tracking-wide hidden sm:block">Tourpoule 2026</span>
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-1">
+        <a href="{{ url_for('index') }}"
+           class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                  {% if request.endpoint == 'index' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
+          <i class="bi bi-house mr-1"></i>Home
+        </a>
+        <a href="{{ url_for('geel_klassement') }}"
+           class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                  {% if request.endpoint == 'geel_klassement' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
+          🟡 Geel
+        </a>
+        <a href="{{ url_for('rood_klassement') }}"
+           class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                  {% if request.endpoint == 'rood_klassement' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
+          🔴 Rood
+        </a>
+        <a href="{{ url_for('etappes') }}"
+           class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                  {% if request.endpoint == 'etappes' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
+          <i class="bi bi-flag mr-1"></i>Etappes
+        </a>
+        <a href="{{ url_for('renners') }}"
+           class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                  {% if request.endpoint == 'renners' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
+          <i class="bi bi-person-badge mr-1"></i>Renners
+        </a>
+        <a href="{{ url_for('inschrijven') }}"
+           class="px-3 py-2 rounded-lg text-sm font-bold transition-colors
+                  {% if request.endpoint == 'inschrijven' %}bg-tdf-yellow text-zinc-900{% else %}bg-tdf-yellow/20 text-tdf-yellow hover:bg-tdf-yellow hover:text-zinc-900{% endif %}">
+          ✍️ Inschrijven
+        </a>
+
+        <!-- Admin dropdown -->
+        <div class="relative ml-2" id="admin-menu">
+          <button onclick="toggleAdmin()"
+                  class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-tdf-yellow hover:bg-white/10 transition-colors">
+            <i class="bi bi-gear"></i> Admin <i class="bi bi-chevron-down text-xs ml-1"></i>
+          </button>
+          <div id="admin-dropdown"
+               class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50">
+            <a href="{{ url_for('admin_index') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 font-semibold">
+              <i class="bi bi-speedometer2 text-gray-400"></i> Dashboard
+            </a>
+            <div class="border-t border-gray-100 my-1"></div>
+            <p class="px-4 pt-1 pb-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Setup</p>
+            <a href="{{ url_for('admin_deelnemers') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-people text-gray-400"></i> Deelnemers & Clusters
+            </a>
+            <a href="{{ url_for('admin_import_csv') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-file-earmark-spreadsheet text-gray-400"></i> Importeer via CSV
+            </a>
+            <a href="{{ url_for('admin_renners') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-bicycle text-gray-400"></i> Renners beheren
+            </a>
+            <a href="{{ url_for('admin_teams') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-list-check text-gray-400"></i> Teams invoeren
+            </a>
+            <a href="{{ url_for('admin_import_teams') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-magic text-gray-400"></i> Teams import CSV
+            </a>
+            <div class="border-t border-gray-100 my-1"></div>
+            <p class="px-4 pt-1 pb-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Resultaten</p>
+            <a href="{{ url_for('admin_etappe') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-flag text-gray-400"></i> Etapperesultaten
+            </a>
+            <a href="{{ url_for('admin_eindklassement') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-trophy text-gray-400"></i> Eindklassementen
+            </a>
+            <a href="{{ url_for('admin_bonusvragen') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
+              <i class="bi bi-question-circle text-gray-400"></i> Bonusvragen
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button onclick="toggleMobile()" class="md:hidden text-gray-300 hover:text-white p-2">
+        <i class="bi bi-list text-2xl"></i>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-white/10 mt-2 pt-3">
+      <div class="flex flex-col gap-1">
+        <a href="{{ url_for('index') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🏠 Home</a>
+        <a href="{{ url_for('geel_klassement') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🟡 Geel Klassement</a>
+        <a href="{{ url_for('rood_klassement') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🔴 Rode Lantaarn</a>
+        <a href="{{ url_for('etappes') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚩 Etappes</a>
+        <a href="{{ url_for('renners') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚴 Renners</a>
+        <a href="{{ url_for('inschrijven') }}" class="px-3 py-2 text-tdf-yellow font-semibold text-sm">✍️ Inschrijven</a>
+        <a href="{{ url_for('admin_index') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">⚙️ Admin</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="px-6 lg:px-10 mt-4 space-y-2">
+    {% for cat, msg in messages %}
+    <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                {% if cat == 'success' %}bg-green-50 text-green-800 border border-green-200
+                {% elif cat == 'danger' %}bg-red-50 text-red-800 border border-red-200
+                {% elif cat == 'warning' %}bg-yellow-50 text-yellow-800 border border-yellow-200
+                {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}"
+         id="flash-{{ loop.index }}">
+      <i class="bi {% if cat == 'success' %}bi-check-circle-fill{% elif cat == 'danger' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} mt-0.5"></i>
+      <span class="flex-1">{{ msg }}</span>
+      <button onclick="this.parentElement.remove()" class="opacity-50 hover:opacity-100">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<footer class="mt-auto bg-zinc-950 border-t-4 border-tdf-yellow py-5 text-center">
+  <div class="flex items-center justify-center gap-3">
+    <div class="bg-white rounded-md px-2 py-1 inline-block">
+      <img src="{{ url_for('static', filename='knltb-logo.png') }}" alt="KNLTB" class="h-5 w-auto">
+    </div>
+    <span class="text-gray-400 text-sm">KNLTB Tourpoule 2026 &mdash; Tour de France 2026</span>
+  </div>
+</footer>
+
+<script>
+function toggleAdmin() {
+  document.getElementById('admin-dropdown').classList.toggle('hidden');
+}
+function toggleMobile() {
+  document.getElementById('mobile-menu').classList.toggle('hidden');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('admin-menu');
+  if (menu && !menu.contains(e.target))
+    document.getElementById('admin-dropdown').classList.add('hidden');
+});
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

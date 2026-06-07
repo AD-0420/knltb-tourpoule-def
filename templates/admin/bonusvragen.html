@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Bonusvragen – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🎯 Bonusvragen</h1>
+    <p class="text-gray-400 mt-1">{{ bonus_points }} punten per correct antwoord · telt alleen voor Geel klassement</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Add question -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Vraag toevoegen</div>
+        <div class="p-4">
+          <form method="post" class="space-y-3">
+            <input type="hidden" name="action" value="add_question">
+            <textarea name="question" rows="3" placeholder="Wie wint de Tour de France 2026?"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow"></textarea>
+            <button class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+              <i class="bi bi-plus-circle mr-1"></i> Vraag toevoegen
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-700">
+        <i class="bi bi-info-circle mr-1"></i>
+        Bonusvragen worden automatisch aangemaakt bij CSV-import. Vink hier aan wie het goed had.
+      </div>
+    </div>
+
+    <!-- Questions list -->
+    <div class="md:col-span-2 space-y-4">
+      {% if questions %}
+      {% for q in questions %}
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 bg-zinc-800">
+          <span class="font-semibold text-white text-sm">
+            Vraag {{ q.number }}: <em class="font-normal text-gray-300">{{ q.question or '(geen tekst)' }}</em>
+          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold">
+              {{ answers[q.id].values()|select|list|length }} correct
+            </span>
+            <form method="post" onsubmit="return confirm('Vraag verwijderen?')">
+              <input type="hidden" name="action" value="delete_question">
+              <input type="hidden" name="question_id" value="{{ q.id }}">
+              <button class="text-gray-400 hover:text-red-400 transition-colors text-sm">✕</button>
+            </form>
+          </div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="action" value="save_answers">
+          <input type="hidden" name="question_id" value="{{ q.id }}">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-gray-400 uppercase tracking-wide bg-gray-50 border-b border-gray-100">
+                <th class="pl-4 py-2">Deelnemer</th>
+                <th class="py-2">Gegeven antwoord</th>
+                <th class="pr-4 py-2 text-center w-20">Correct?</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {% for p in participants %}
+              {% set ans_text = answer_texts[q.id].get(p.id, '') %}
+              {% set is_correct = answers[q.id].get(p.id, False) %}
+              <tr class="hover:bg-gray-50 transition-colors {% if is_correct %}bg-green-50{% endif %}">
+                <td class="pl-4 py-2 font-semibold text-gray-800">{{ p.name }}</td>
+                <td class="py-2">
+                  {% if ans_text %}
+                    <span class="font-mono text-sm text-gray-700 bg-gray-100 px-2 py-0.5 rounded">{{ ans_text }}</span>
+                  {% else %}
+                    <span class="text-gray-300 text-xs italic">niet ingevoerd</span>
+                  {% endif %}
+                </td>
+                <td class="pr-4 py-2 text-center">
+                  <input type="checkbox" name="correct_{{ p.id }}"
+                         class="w-4 h-4 accent-green-600"
+                         {% if is_correct %}checked{% endif %}>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="px-4 py-3 bg-gray-50 border-t border-gray-100">
+            <button type="submit"
+                    class="bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+              <i class="bi bi-save mr-1"></i> Antwoorden opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="bg-white rounded-2xl shadow-sm text-center py-12 text-gray-400">
+        <div class="text-4xl mb-3">🎯</div>
+        <p>Nog geen bonusvragen. Voeg er een toe via het formulier links, of importeer via CSV.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
