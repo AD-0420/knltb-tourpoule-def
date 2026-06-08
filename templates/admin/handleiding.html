@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+{% block title %}Beheerhandleiding – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">📖 Beheerhandleiding</h1>
+    <p class="text-gray-400 mt-1">Alles wat je moet weten om de KNLTB Tourpoule 2026 te beheren</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-16">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+    <!-- Inhoudsopgave (sticky sidebar) -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-24 bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-900">
+          <span class="font-semibold text-tdf-yellow text-sm">Inhoudsopgave</span>
+        </div>
+        <nav class="p-4 space-y-1 text-sm">
+          <a href="#overzicht" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">0</span> Overzicht spelflow
+          </a>
+          <a href="#voorbereiding" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">1</span> Voorbereiding
+          </a>
+          <a href="#inschrijvingen" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">2</span> Inschrijvingen verwerken
+          </a>
+          <a href="#tijdens" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">3</span> Tijdens de Tour
+          </a>
+          <a href="#na" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">4</span> Na de Tour
+          </a>
+          <a href="#puntentelling" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">5</span> Puntentelling
+          </a>
+          <a href="#technisch" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-50 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="text-tdf-yellow font-bold">6</span> Technisch beheer
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Inhoud -->
+    <div class="lg:col-span-3 space-y-8">
+
+      <!-- 0. Spelflow overzicht -->
+      <section id="overzicht" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">🗺️</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">0. Overzicht spelflow</h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-center text-sm">
+            {% for icon, label, sub in [
+              ('📋','Startlijst','renners toevoegen'),
+              ('✍️','Inschrijvingen','deelnemers + teams'),
+              ('🚴','Tour start','4 juli 2026'),
+              ('🏁','Etappes','dagelijks bijwerken'),
+              ('🏆','Eindstand','winnaar bekendmaken')
+            ] %}
+            <div class="relative">
+              <div class="bg-zinc-50 border border-gray-200 rounded-xl p-3">
+                <div class="text-2xl mb-1">{{ icon }}</div>
+                <div class="font-bold text-gray-800">{{ label }}</div>
+                <div class="text-xs text-gray-400 mt-0.5">{{ sub }}</div>
+              </div>
+              {% if not loop.last %}
+              <div class="hidden md:block absolute top-1/2 -right-2 text-gray-300 text-lg font-bold z-10">›</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <strong>Belangrijke datums:</strong> Inschrijfdeadline <strong>vrijdag 3 juli 2026 om 17:00</strong> · Tour start <strong>zaterdag 4 juli 2026</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1. Voorbereiding -->
+      <section id="voorbereiding" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">⚙️</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">1. Voorbereiding (vóór de deadline)</h2>
+        </div>
+        <div class="p-6 space-y-6">
+
+          <!-- 1.1 Startlijst -->
+          <div>
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">1.1</span>
+              Startlijst TdF 2026 invoeren
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Renners beheren</strong></li>
+              <li>Gebruik de <strong>Bulk import</strong> (rechter kolom)</li>
+              <li>Plak de volledige startlijst: formaat <code class="bg-gray-100 px-1 rounded">ACHTERNAAM Voornaam</code>, één per regel</li>
+              <li>De officiële startlijst vind je op <a href="https://www.procyclingstats.com/race/tour-de-france/2026/startlist" target="_blank" class="text-amber-600 underline">procyclingstats.com</a></li>
+              <li>Klik <strong>Bulk toevoegen</strong> — bestaande renners worden automatisch overgeslagen</li>
+            </ol>
+            <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+              💡 <strong>Tip:</strong> De startlijst wordt doorgaans 1–2 weken voor de Tour gepubliceerd. Controleer ook de wildcards!
+            </div>
+          </div>
+
+          <!-- 1.2 Bonusvragen -->
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">1.2</span>
+              Bonusvragen instellen
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Bonusvragen</strong></li>
+              <li>Voeg de vragen toe die deelnemers moeten beantwoorden bij inschrijving</li>
+              <li>Voorbeeldvragen: "Wie wint de Tour?", "Wie wint het groene trui klassement?", "Welke renner valt als eerste uit?"</li>
+              <li>Elke correcte beantwoording levert <strong>{{ bonus_points }} punten</strong> op in het Geel klassement</li>
+            </ol>
+            <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⚠️ <strong>Belangrijk:</strong> Voeg bonusvragen in <em>vóór</em> de inschrijfdeadline. Deelnemers beantwoorden ze bij hun inschrijving. Na de deadline kun je geen nieuwe vragen meer toevoegen (die bestaande deelnemers al niet konden invullen).
+            </div>
+          </div>
+
+          <!-- 1.3 Inschrijving openstellen -->
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">1.3</span>
+              Inschrijving openstellen
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Het inschrijfformulier is beschikbaar op:</p>
+            <div class="bg-zinc-900 rounded-xl px-4 py-3 font-mono text-tdf-yellow text-sm">
+              /inschrijven
+            </div>
+            <ul class="mt-3 space-y-1 text-sm text-gray-600">
+              <li>• Deel deze link met alle collega's</li>
+              <li>• Het formulier sluit automatisch op <strong>3 juli 2026 om 17:00</strong></li>
+              <li>• Deelnemers kiezen {{ max_geel }} renners voor geel en optioneel {{ max_rood }} voor rood</li>
+              <li>• Nieuwe deelnemers verschijnen direct in <strong>Admin → Deelnemers</strong></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Inschrijvingen verwerken -->
+      <section id="inschrijvingen" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">✍️</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">2. Inschrijvingen verwerken</h2>
+        </div>
+        <div class="p-6 space-y-6">
+
+          <div>
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">2.1</span>
+              Via het inschrijfformulier (aanbevolen)
+            </h3>
+            <p class="text-sm text-gray-600">Deelnemers schrijven zichzelf in via <code class="bg-gray-100 px-1 rounded">/inschrijven</code>. Alles wordt automatisch opgeslagen — geen actie nodig van de beheerder.</p>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">2.2</span>
+              Via CSV import (Google Forms)
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Als jullie ook nog het oude Google Forms formulier gebruiken:</p>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Open de Google Sheet met reacties → <strong>Bestand → Downloaden → CSV</strong></li>
+              <li>Ga naar <strong>Admin → Importeer via CSV</strong> voor deelnemers</li>
+              <li>Ga naar <strong>Admin → Teams importeren via CSV</strong> voor rennersselecties (met fuzzy matching)</li>
+            </ol>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">2.3</span>
+              Handmatig teams invoeren
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Teams invoeren</strong></li>
+              <li>Selecteer een deelnemer bovenaan</li>
+              <li>Vink {{ max_geel }} renners aan voor het Geel team (zoekbalk beschikbaar)</li>
+              <li>Optioneel: vink {{ max_rood }} renners aan voor het Rood team</li>
+              <li>Sla elk team apart op</li>
+            </ol>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">2.4</span>
+              Fuzzy matching bij CSV import
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">De Teams CSV import gebruikt automatische naamkoppeling. Het systeem herkent:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {% for voorbeeld, resultaat, kleur in [
+                ('pogacar','POGAČAR Tadej','green'),
+                ('Tadej Pogačar','POGAČAR Tadej','green'),
+                ('Vingegaard','VINGEGAARD Jonas','green'),
+                ('van der poel','VAN DER POEL Mathieu','yellow'),
+                ('philippsen (typefout)','PHILIPSEN Jasper','green'),
+                ('lipovitz (typefout)','LIPOWITZ Florian','green')
+              ] %}
+              <div class="flex items-center gap-2 text-xs bg-{{ kleur }}-50 border border-{{ kleur }}-200 rounded-lg px-3 py-2">
+                <code class="text-gray-500">{{ voorbeeld }}</code>
+                <span class="text-gray-400">→</span>
+                <span class="font-semibold text-{{ kleur }}-700">{{ resultaat }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            <p class="text-xs text-gray-400 mt-3">Twijfelgevallen (oranje) verschijnen in een review-stap. Je kiest zelf de juiste koppeling.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Tijdens de Tour -->
+      <section id="tijdens" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">🚴</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">3. Tijdens de Tour (4–27 juli)</h2>
+        </div>
+        <div class="p-6 space-y-6">
+
+          <div>
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">3.1</span>
+              Etapperesultaten invoeren
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Doe dit zo snel mogelijk na de finish van elke etappe. De standen worden direct bijgewerkt.</p>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Etapperesultaten</strong></li>
+              <li>Selecteer de etappe (knoppenrij bovenaan — grijs = nog in te voeren, geel = geselecteerd, donker = al ingevoerd)</li>
+              <li>Vul de <strong>top 15 finishers</strong> in (positie 1 t/m 15)</li>
+              <li>Vul de <strong>4 truidragers</strong> in (geel, groen, bollen, wit)</li>
+              <li>Klik <strong>Etappe opslaan</strong></li>
+              <li>Gebruik de "Volgende etappe →" knop om direct door te gaan</li>
+            </ol>
+            <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+              💡 <strong>Tip:</strong> Gebruik <a href="https://www.letour.fr" target="_blank" class="underline">letour.fr</a> of <a href="https://www.procyclingstats.com" target="_blank" class="underline">procyclingstats.com</a> voor de officiële uitslagen.
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">3.2</span>
+              Standen controleren
+            </h3>
+            <ul class="space-y-1 text-sm text-gray-600">
+              <li>• <strong>Geel klassement</strong> → <code class="bg-gray-100 px-1 rounded">/geel</code> — ranglijst met grafiek per etappe</li>
+              <li>• <strong>Rode Lantaarn</strong> → <code class="bg-gray-100 px-1 rounded">/rood</code> — minste punten wint</li>
+              <li>• <strong>Per deelnemer</strong> → klik op een naam — zie alle renners met individuele punten</li>
+              <li>• <strong>Rennersstats</strong> → <code class="bg-gray-100 px-1 rounded">/renners</code> — populariteitsoverzicht en punten per renner</li>
+            </ul>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">3.3</span>
+              Fouten herstellen
+            </h3>
+            <p class="text-sm text-gray-600">Een etapperesultaat verkeerd ingevoerd? Geen probleem:</p>
+            <ol class="space-y-1 text-sm text-gray-600 list-decimal list-inside mt-2">
+              <li>Ga naar <strong>Admin → Etapperesultaten</strong></li>
+              <li>Selecteer dezelfde etappe</li>
+              <li>Pas de gegevens aan en sla opnieuw op — de oude data wordt overschreven</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Na de Tour -->
+      <section id="na" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">🏆</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">4. Na de Tour (na 27 juli)</h2>
+        </div>
+        <div class="p-6 space-y-6">
+
+          <div>
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">4.1</span>
+              Eindklassementen invoeren
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Eindklassementen</strong></li>
+              <li>Voer de <strong>top 15</strong> in voor elk van de 4 klassementen: Geel, Groen, Bollen, Wit</li>
+              <li>Puntentelling is identiek aan etappes (35-25-20-18-16…1)</li>
+              <li>Sla elk klassement apart op</li>
+            </ol>
+            <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⚠️ Voer de eindklassementen in <em>naast</em> de etapperesultaten — ze worden bij elkaar opgeteld.
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">4.2</span>
+              Bonusvragen beoordelen
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <strong>Admin → Bonusvragen</strong></li>
+              <li>Per vraag zie je alle ingevoerde antwoorden van de deelnemers</li>
+              <li>Vink aan wie het juiste antwoord had</li>
+              <li>Klik <strong>Antwoorden opslaan</strong> — de punten worden direct verwerkt</li>
+            </ol>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">4.3</span>
+              Winnaar bekendmaken
+            </h3>
+            <p class="text-sm text-gray-600">Na het invoeren van alle data is de definitieve ranglijst zichtbaar op <code class="bg-gray-100 px-1 rounded">/geel</code>. De #1 in het Geel klassement wint het spel, de #1 in het Rood klassement wint de Rode Lantaarn prijs.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Puntentelling -->
+      <section id="puntentelling" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">🎯</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">5. Puntentelling</h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Etappe punten -->
+            <div>
+              <h4 class="font-bold text-gray-900 mb-3 text-sm">Per etappe + eindklassementen</h4>
+              <div class="space-y-1">
+                {% for pos, pts in points_table.items() %}
+                <div class="flex items-center justify-between text-sm py-1 {% if loop.index <= 3 %}border-b border-gray-100{% endif %}">
+                  <span class="text-gray-500">
+                    <span class="{% if pos == 1 %}text-amber-500 font-bold{% elif pos == 2 %}text-gray-400 font-semibold{% elif pos == 3 %}text-amber-700 font-semibold{% endif %}">#{{ pos }}</span>
+                  </span>
+                  <span class="font-bold {% if pos <= 3 %}text-gray-900{% else %}text-gray-600{% endif %}">{{ pts }} pts</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Truidragers -->
+            <div>
+              <h4 class="font-bold text-gray-900 mb-3 text-sm">Truidragers (per dag)</h4>
+              <div class="space-y-2">
+                {% for jersey, label, cls in [
+                  ('Geel','Gele trui','jersey-yellow'),
+                  ('Groen','Groene trui','jersey-green'),
+                  ('Bollen','Bolletjestrui','jersey-polka'),
+                  ('Wit','Witte trui','jersey-white')
+                ] %}
+                <div class="flex items-center justify-between text-sm">
+                  <span class="jersey-badge {{ cls }} text-xs px-2 py-0.5 rounded font-semibold">{{ label }}</span>
+                  <span class="font-bold text-gray-900">+1 pt/dag</span>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="mt-4 text-xs text-gray-400">
+                De truidrager na elke etappe krijgt 1 punt. Over 21 etappes = max 21 punten per trui.
+              </div>
+            </div>
+
+            <!-- Bonusvragen + Rode Lantaarn -->
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 text-sm">Bonusvragen</h4>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center">
+                  <div class="text-3xl font-extrabold text-tdf-yellow">{{ bonus_points }}</div>
+                  <div class="text-xs text-amber-700">punten per correct antwoord</div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Telt alleen mee voor het Geel klassement, niet voor Rood.</p>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 text-sm">Rode Lantaarn</h4>
+                <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+                  <p>Zelfde puntentelling, maar de deelnemer met de <strong>laagste score</strong> wint. Bonusvragen tellen niet mee.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 border-t border-gray-100 pt-6">
+            <h4 class="font-bold text-gray-900 mb-3 text-sm">Hoe wordt de eindscore berekend?</h4>
+            <div class="bg-zinc-50 border border-gray-200 rounded-xl p-4 font-mono text-sm text-gray-700 space-y-1">
+              <div><span class="text-gray-400">// Geel score per deelnemer:</span></div>
+              <div>∑ (etappepunten van alle 15 gekozen renners)</div>
+              <div>+ ∑ (truidrager-punten van alle 15 gekozen renners)</div>
+              <div>+ ∑ (eindklassement-punten van alle 15 gekozen renners)</div>
+              <div>+ (aantal correcte bonusvragen × {{ bonus_points }})</div>
+              <div class="mt-2"><span class="text-gray-400">// Rood score: zelfde maar zonder bonusvragen</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Technisch beheer -->
+      <section id="technisch" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-zinc-900 flex items-center gap-3">
+          <span class="text-2xl">🔧</span>
+          <h2 class="text-lg font-bold text-tdf-yellow">6. Technisch beheer</h2>
+        </div>
+        <div class="p-6 space-y-6">
+
+          <div>
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">6.1</span>
+              Admin-wachtwoord wijzigen
+            </h3>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Ga naar <a href="https://railway.app" target="_blank" class="text-amber-600 underline">railway.app</a> → jouw project</li>
+              <li>Klik op je service → tabblad <strong>Variables</strong></li>
+              <li>Pas <code class="bg-gray-100 px-1 rounded">ADMIN_PASSWORD</code> aan</li>
+              <li>Railway herstart de app automatisch</li>
+            </ol>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">6.2</span>
+              Alle drie beheerders toegang geven
+            </h3>
+            <p class="text-sm text-gray-600 mb-2">Het admin-wachtwoord werkt voor alle drie beheerders — deel het wachtwoord via een beveiligd kanaal (bijv. Teams DM). Iedereen met het wachtwoord heeft volledige admin-toegang.</p>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              🔒 Gebruik nooit hetzelfde wachtwoord als andere diensten. Kies iets specifieks voor Tourpoule 2026.
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">6.3</span>
+              Taakverdeling beheerders
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {% for fase, taken, kleur in [
+                ('Vóór de Tour', ['Startlijst invoeren', 'Bonusvragen instellen', 'Inschrijvingen controleren', 'Teams nalopen'], 'blue'),
+                ('Tijdens de Tour', ['Dagelijks: etapperesultaten', 'Truidragers bijwerken', 'Vragen van deelnemers beantwoorden'], 'green'),
+                ('Na de Tour', ['Eindklassementen invoeren', 'Bonusvragen beoordelen', 'Winnaar bekendmaken'], 'purple')
+              ] %}
+              <div class="bg-{{ kleur }}-50 border border-{{ kleur }}-200 rounded-xl p-4">
+                <div class="font-bold text-{{ kleur }}-800 text-sm mb-2">{{ fase }}</div>
+                <ul class="space-y-1">
+                  {% for taak in taken %}
+                  <li class="text-xs text-{{ kleur }}-700 flex items-start gap-1.5">
+                    <span class="mt-0.5">•</span> {{ taak }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">6.4</span>
+              Hosting &amp; kosten
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div class="border border-gray-200 rounded-xl p-3">
+                <div class="font-bold text-gray-700 mb-1">Hosting (Railway)</div>
+                <div class="text-gray-500 text-xs">~€5/maand · automatisch schaalbaar · HTTPS inbegrepen</div>
+              </div>
+              <div class="border border-gray-200 rounded-xl p-3">
+                <div class="font-bold text-gray-700 mb-1">Domeinnaam</div>
+                <div class="text-gray-500 text-xs">~€12/jaar via TransIP · koppeling via DNS CNAME</div>
+              </div>
+              <div class="border border-gray-200 rounded-xl p-3">
+                <div class="font-bold text-gray-700 mb-1">Code (GitHub)</div>
+                <div class="text-gray-500 text-xs">Gratis · private repository · auto-deploy bij elke wijziging</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">6.5</span>
+              Veelgestelde vragen
+            </h3>
+            <div class="space-y-3">
+              {% for vraag, antwoord in [
+                ('Een deelnemer heeft zijn team verkeerd ingevoerd — kan dat aangepast worden?',
+                 'Ja. Ga naar Admin → Teams invoeren → selecteer de deelnemer → pas het team aan en sla op. De scores worden direct herberekend.'),
+                ('Een renner ontbreekt in de startlijst',
+                 'Ga naar Admin → Renners beheren → voeg de renner handmatig toe. Bestaande teams worden niet aangepast; de renner kan nu wel geselecteerd worden.'),
+                ('Kan ik een deelnemer verwijderen?',
+                 'Ja, in Admin → Deelnemers & Clusters → klik op ✕ naast de naam. Let op: dit verwijdert ook alle selecties van die deelnemer.'),
+                ('Wat gebeurt er als een renner uitvalt in de Tour?',
+                 'Niets speciaals — die renner scoort gewoon 0 punten voor de etappes die hij niet heeft gereden. Je hoeft niets te doen.'),
+                ('De app doet het niet of ik zie een foutmelding',
+                 'Ga naar railway.app → jouw project → Deployments. Kijk of de laatste deployment groen is. Bij problemen: klik "Redeploy".')
+              ] %}
+              <details class="border border-gray-200 rounded-xl overflow-hidden">
+                <summary class="px-4 py-3 text-sm font-semibold text-gray-800 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                  <span>{{ vraag }}</span>
+                  <i class="bi bi-chevron-down text-gray-400 text-xs ml-2 flex-shrink-0"></i>
+                </summary>
+                <div class="px-4 py-3 text-sm text-gray-600 bg-gray-50 border-t border-gray-100">
+                  {{ antwoord }}
+                </div>
+              </details>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

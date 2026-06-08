@@ -87,14 +87,20 @@
 
   <!-- Handleiding -->
   <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-    <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">📖 Snelle handleiding</div>
+    <div class="flex items-center justify-between px-5 py-3 bg-zinc-800">
+      <span class="font-semibold text-white">📖 Snelle handleiding</span>
+      <a href="{{ url_for('admin_handleiding') }}"
+         class="text-xs bg-tdf-yellow text-zinc-900 font-semibold px-3 py-1.5 rounded-lg hover:bg-yellow-300 transition-colors">
+        Volledige handleiding →
+      </a>
+    </div>
     <ol class="p-5 space-y-2 text-sm text-gray-600 list-decimal list-inside">
-      <li><strong class="text-gray-800">Deelnemers & Clusters:</strong> Voeg alle deelnemers toe en deel ze in per cluster.</li>
-      <li><strong class="text-gray-800">Renners:</strong> Voeg de TdF 2026 startlijst toe (bulk-import mogelijk).</li>
-      <li><strong class="text-gray-800">Teams:</strong> Voer per deelnemer de 15 geel-renners in en optioneel 15 rood-renners.</li>
+      <li><strong class="text-gray-800">Renners:</strong> Voeg de TdF 2026 startlijst toe via Bulk import.</li>
+      <li><strong class="text-gray-800">Bonusvragen:</strong> Stel de vragen in vóór de inschrijfdeadline (3 juli 17:00).</li>
+      <li><strong class="text-gray-800">Inschrijvingen:</strong> Deel de link <code class="bg-gray-100 px-1 rounded">/inschrijven</code> met collega's.</li>
       <li><strong class="text-gray-800">Etapperesultaten:</strong> Voer na elke etappe de top-15 en truidragers in.</li>
-      <li><strong class="text-gray-800">Eindklassementen:</strong> Na de Tour: voer de eindstanden in voor geel, groen, bollen en wit.</li>
-      <li><strong class="text-gray-800">Bonusvragen:</strong> Voer vragen in en markeer wie correct heeft geantwoord.</li>
+      <li><strong class="text-gray-800">Eindklassementen:</strong> Na de Tour de top-15 per klassement invoeren.</li>
+      <li><strong class="text-gray-800">Bonusvragen beoordelen:</strong> Markeer wie het juiste antwoord had.</li>
     </ol>
   </div>
 </div>

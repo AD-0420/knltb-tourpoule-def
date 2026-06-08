@@ -414,6 +414,17 @@ def inschrijven_bevestiging():
 
 # ── Admin routes ───────────────────────────────────────────────────────────────
 
+@app.route('/admin/handleiding')
+@require_admin
+def admin_handleiding():
+    return render_template('admin/handleiding.html',
+                           points_table=POINTS_TABLE,
+                           bonus_points=BONUS_POINTS,
+                           max_geel=MAX_GEEL,
+                           max_rood=MAX_ROOD,
+                           deadline=INSCHRIJF_DEADLINE)
+
+
 @app.route('/admin')
 @require_admin
 def admin_index():
