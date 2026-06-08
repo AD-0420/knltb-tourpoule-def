@@ -19,6 +19,10 @@ app.config['ADMIN_PASSWORD'] = os.environ.get('ADMIN_PASSWORD', 'tourpoule2026')
 
 db.init_app(app)
 
+# Maak databasetabellen automatisch aan bij opstarten (ook op Railway/productie)
+with app.app_context():
+    db.create_all()
+
 POINTS_TABLE = {1: 35, 2: 25, 3: 20, 4: 18, 5: 16, 6: 14, 7: 12,
                 8: 10, 9: 8, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1}
 BONUS_POINTS = 15
