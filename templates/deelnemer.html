@@ -103,9 +103,22 @@
           </thead>
           <tbody class="divide-y divide-gray-100">
             {% for item in rood_team %}
-            <tr class="hover:bg-red-50 transition-colors">
+            <tr class="hover:bg-red-50 transition-colors {% if item.niet_gestart %}bg-gray-50{% endif %}">
               <td class="pl-4 py-2 text-gray-400">{{ loop.index }}</td>
-              <td class="py-2 font-medium">{{ item.rider.name }}</td>
+              <td class="py-2">
+                <span class="font-medium {% if item.niet_gestart %}line-through text-gray-400{% endif %}">
+                  {{ item.display_name }}
+                </span>
+                {% if not item.matched %}
+                  <span class="ml-1 text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">
+                    onbekend
+                  </span>
+                {% elif item.niet_gestart %}
+                  <span class="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
+                    niet gestart
+                  </span>
+                {% endif %}
+              </td>
               <td class="pr-4 py-2 text-right {% if item.points == 0 %}text-green-600 font-bold{% else %}text-gray-400{% endif %}">
                 {{ item.points }}
               </td>

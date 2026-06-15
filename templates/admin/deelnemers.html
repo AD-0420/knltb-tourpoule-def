@@ -124,7 +124,7 @@
                 <span class="counter-{% if g == 15 %}ok{% elif g > 0 %}warn{% else %}ok{% endif %}">{{ g }}/15</span>
               </td>
               <td class="py-2.5 text-center">
-                {% set r = p.selections|selectattr('type','eq','rood')|list|length %}
+                {% set r = p.rood_entries|list|length %}
                 {% if r > 0 %}
                   <span class="counter-{% if r == 15 %}ok{% else %}warn{% endif %}">{{ r }}/15</span>
                 {% else %}

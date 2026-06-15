@@ -47,6 +47,12 @@
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="px-5 py-3 bg-zinc-800 flex items-center justify-between">
           <span class="font-semibold text-white">Renners ({{ riders|length }})</span>
+          {% set n_ng = riders|selectattr('niet_gestart')|list|length %}
+          {% if n_ng > 0 %}
+          <span class="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-semibold">
+            {{ n_ng }} niet gestart
+          </span>
+          {% endif %}
         </div>
         <div class="overflow-y-auto" style="max-height:580px">
           <table class="w-full text-sm">
@@ -54,14 +60,29 @@
               <tr class="text-left text-xs text-tdf-yellow uppercase tracking-wider">
                 <th class="pl-4 py-3 w-12">#</th>
                 <th class="py-3">Naam</th>
-                <th class="pr-4 py-3 w-12"></th>
+                <th class="py-3 text-center w-32">Niet gestart</th>
+                <th class="pr-4 py-3 w-10"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               {% for r in riders %}
-              <tr class="hover:bg-slate-50 transition-colors">
+              <tr class="transition-colors {% if r.niet_gestart %}bg-gray-50{% else %}hover:bg-slate-50{% endif %}">
                 <td class="pl-4 py-2 text-gray-400 font-mono text-xs">{{ loop.index }}</td>
-                <td class="py-2 font-medium text-gray-800">{{ r.name }}</td>
+                <td class="py-2 font-medium {% if r.niet_gestart %}text-gray-400 line-through{% else %}text-gray-800{% endif %}">
+                  {{ r.name }}
+                </td>
+                <td class="py-2 text-center">
+                  <form method="post" class="inline">
+                    <input type="hidden" name="action" value="toggle_niet_gestart">
+                    <input type="hidden" name="rider_id" value="{{ r.id }}">
+                    <button type="submit"
+                            class="text-xs px-2 py-1 rounded-full font-semibold transition-colors
+                                   {% if r.niet_gestart %}bg-orange-100 text-orange-700 hover:bg-orange-200
+                                   {% else %}bg-gray-100 text-gray-400 hover:bg-gray-200{% endif %}">
+                      {% if r.niet_gestart %}✗ Niet gestart{% else %}— Actief{% endif %}
+                    </button>
+                  </form>
+                </td>
                 <td class="pr-4 py-2 text-right">
                   <form method="post" onsubmit="return confirm('{{ r.name }} verwijderen?')">
                     <input type="hidden" name="action" value="delete">
@@ -71,7 +92,7 @@
                 </td>
               </tr>
               {% else %}
-              <tr><td colspan="3" class="text-center text-gray-400 py-8">Nog geen renners.</td></tr>
+              <tr><td colspan="4" class="text-center text-gray-400 py-8">Nog geen renners.</td></tr>
               {% endfor %}
             </tbody>
           </table>

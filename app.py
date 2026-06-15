@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from functools import wraps
 from rapidfuzz import fuzz, process as fuzz_process
-from models import (db, Cluster, Participant, Rider, Selection, Stage,
+from models import (db, Cluster, Participant, Rider, RoodEntry, Selection, Stage,
                     StageResult, JerseyWearer, FinalClassification,
                     BonusQuestion, BonusAnswer)
 
@@ -22,6 +22,13 @@ db.init_app(app)
 # Maak databasetabellen automatisch aan bij opstarten (ook op Railway/productie)
 with app.app_context():
     db.create_all()
+    # Migrate: add niet_gestart column to existing rider tables
+    with db.engine.connect() as _conn:
+        try:
+            _conn.execute(db.text("ALTER TABLE rider ADD COLUMN niet_gestart BOOLEAN DEFAULT 0"))
+            _conn.commit()
+        except Exception:
+            pass
 
 POINTS_TABLE = {1: 35, 2: 25, 3: 20, 4: 18, 5: 16, 6: 14, 7: 12,
                 8: 10, 9: 8, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1}
@@ -79,14 +86,17 @@ def get_participant_scores():
                        for s in p.selections if s.type == 'geel')
         geel_pts += bonus_counts.get(p.id, 0) * BONUS_POINTS
 
-        rood_sels = [s for s in p.selections if s.type == 'rood']
-        rood_pts = sum(rider_points[s.rider_id] for s in rood_sels) if rood_sels else None
+        rood_entries = p.rood_entries
+        has_rood = bool(rood_entries)
+        rood_pts = (sum(rider_points.get(e.matched_rider_id, 0)
+                        for e in rood_entries if e.matched_rider_id)
+                    if rood_entries else None)
 
         result.append({
             'participant': p,
             'geel': geel_pts,
             'rood': rood_pts,
-            'has_rood': bool(rood_sels),
+            'has_rood': has_rood,
         })
     return result
 
@@ -141,11 +151,21 @@ def deelnemer(pid):
          for s in p.selections if s.type == 'geel'],
         key=lambda x: x['points'], reverse=True
     )
-    rood_team = sorted(
-        [{'rider': s.rider, 'points': rider_points[s.rider_id]}
-         for s in p.selections if s.type == 'rood'],
-        key=lambda x: x['points']
-    )
+
+    rood_entries_raw = RoodEntry.query.filter_by(participant_id=pid)\
+        .order_by(RoodEntry.position).all()
+    rood_team = []
+    for e in rood_entries_raw:
+        pts = rider_points.get(e.matched_rider_id, 0) if e.matched_rider_id else 0
+        niet_gestart = e.matched_rider.niet_gestart if e.matched_rider else False
+        rood_team.append({
+            'display_name': e.matched_rider.name if e.matched_rider else e.custom_name,
+            'custom_name': e.custom_name,
+            'matched': bool(e.matched_rider_id),
+            'niet_gestart': niet_gestart,
+            'points': pts,
+        })
+    rood_team.sort(key=lambda x: x['points'])
 
     geel_total = sum(x['points'] for x in geel_team)
     bonus_correct = BonusAnswer.query.filter_by(participant_id=pid, correct=True).count()
@@ -180,7 +200,8 @@ def renners():
     from collections import Counter
     rider_points = get_rider_points_map()
     geel_counts = Counter(s.rider_id for s in Selection.query.filter_by(type='geel').all())
-    rood_counts  = Counter(s.rider_id for s in Selection.query.filter_by(type='rood').all())
+    rood_counts  = Counter(e.matched_rider_id for e in RoodEntry.query.all()
+                           if e.matched_rider_id)
     n_participants = Participant.query.count() or 1
 
     riders = Rider.query.order_by(Rider.name).all()
@@ -348,7 +369,9 @@ def inschrijven():
         naam = request.form.get('naam', '').strip()
         afdeling = request.form.get('afdeling', '').strip()
         geel_ids = [int(x) for x in request.form.getlist('geel_riders')]
-        rood_ids = [int(x) for x in request.form.getlist('rood_riders')]
+        rood_names = [request.form.get(f'rood_name_{i}', '').strip()
+                      for i in range(1, 16)]
+        rood_names = [n for n in rood_names if n]
 
         # Validatie
         errors = []
@@ -358,8 +381,8 @@ def inschrijven():
             errors.append('Voer je afdeling in.')
         if len(geel_ids) != 15:
             errors.append(f'Kies precies 15 renners voor je geel team (nu {len(geel_ids)}).')
-        if rood_ids and len(rood_ids) != 15:
-            errors.append(f'Kies precies 15 renners voor je rood team of laat leeg (nu {len(rood_ids)}).')
+        if rood_names and len(rood_names) != 15:
+            errors.append(f'Vul precies 15 renners in voor je rood team of laat alles leeg (nu {len(rood_names)}).')
 
         if errors:
             for e in errors:
@@ -386,8 +409,20 @@ def inschrijven():
 
         for rid in geel_ids:
             db.session.add(Selection(participant_id=p.id, rider_id=rid, type='geel'))
-        for rid in rood_ids:
-            db.session.add(Selection(participant_id=p.id, rider_id=rid, type='rood'))
+
+        # Rood: free text, try to auto-match to startlist
+        if rood_names:
+            all_riders = Rider.query.order_by(Rider.name).all()
+            r_index = build_rider_index(all_riders)
+            for pos, raw_name in enumerate(rood_names, 1):
+                rid, score, auto = match_rider_name(raw_name, r_index)
+                matched_id = rid if auto else None
+                db.session.add(RoodEntry(
+                    participant_id=p.id,
+                    custom_name=raw_name,
+                    matched_rider_id=matched_id,
+                    position=pos,
+                ))
 
         for q in questions:
             answer_text = request.form.get(f'bonus_{q.id}', '').strip()
@@ -428,11 +463,26 @@ def admin_handleiding():
 @app.route('/admin')
 @require_admin
 def admin_index():
+    # Build niet-gestart warnings
+    niet_gestart_warnings = []
+    for r in Rider.query.filter_by(niet_gestart=True).all():
+        geel_aff = [s.participant for s in
+                    Selection.query.filter_by(rider_id=r.id, type='geel').all()]
+        rood_aff = [e.participant for e in
+                    RoodEntry.query.filter_by(matched_rider_id=r.id).all()]
+        if geel_aff or rood_aff:
+            niet_gestart_warnings.append({
+                'rider': r,
+                'geel': geel_aff,
+                'rood': rood_aff,
+            })
+
     return render_template('admin/index.html',
                            n_participants=Participant.query.count(),
                            n_riders=Rider.query.count(),
                            n_stages=Stage.query.count(),
-                           n_questions=BonusQuestion.query.count())
+                           n_questions=BonusQuestion.query.count(),
+                           niet_gestart_warnings=niet_gestart_warnings)
 
 
 @app.route('/admin/deelnemers', methods=['GET', 'POST'])
@@ -515,6 +565,14 @@ def admin_renners():
                 db.session.delete(r)
                 db.session.commit()
                 flash(f'{r.name} verwijderd.', 'warning')
+        elif action == 'toggle_niet_gestart':
+            rid = request.form.get('rider_id')
+            r = Rider.query.get(rid)
+            if r:
+                r.niet_gestart = not r.niet_gestart
+                db.session.commit()
+                status = 'gemarkeerd als niet gestart' if r.niet_gestart else 'terug op actief'
+                flash(f'{r.name} {status}.', 'warning' if r.niet_gestart else 'success')
         return redirect(url_for('admin_renners'))
 
     riders = Rider.query.order_by(Rider.name).all()
@@ -530,29 +588,56 @@ def admin_teams():
 
     if request.method == 'POST':
         pid = int(request.form.get('participant_id'))
-        sel_type = request.form.get('type')  # 'geel' or 'rood'
-        rider_ids = [int(x) for x in request.form.getlist('rider_ids')]
-        max_sel = MAX_GEEL if sel_type == 'geel' else MAX_ROOD
+        action = request.form.get('action', 'save_geel')
 
-        if len(rider_ids) > max_sel:
-            flash(f'Maximaal {max_sel} renners toegestaan voor {sel_type} team.', 'danger')
-        else:
-            Selection.query.filter_by(participant_id=pid, type=sel_type).delete()
-            for rid in rider_ids:
-                db.session.add(Selection(participant_id=pid, rider_id=rid, type=sel_type))
+        if action == 'save_geel':
+            rider_ids = [int(x) for x in request.form.getlist('rider_ids')]
+            if len(rider_ids) > MAX_GEEL:
+                flash(f'Maximaal {MAX_GEEL} renners voor geel team.', 'danger')
+            else:
+                Selection.query.filter_by(participant_id=pid, type='geel').delete()
+                for rid in rider_ids:
+                    db.session.add(Selection(participant_id=pid, rider_id=rid, type='geel'))
+                db.session.commit()
+                flash('Geel team opgeslagen.', 'success')
+
+        elif action == 'save_rood_entries':
+            # Save free-text rood entries + optional matched_rider_id per entry
+            RoodEntry.query.filter_by(participant_id=pid).delete()
+            for i in range(1, MAX_ROOD + 1):
+                cname = request.form.get(f'rood_name_{i}', '').strip()
+                if not cname:
+                    continue
+                mid_raw = request.form.get(f'rood_match_{i}', '')
+                mid = int(mid_raw) if mid_raw else None
+                db.session.add(RoodEntry(
+                    participant_id=pid,
+                    custom_name=cname,
+                    matched_rider_id=mid,
+                    position=i,
+                ))
             db.session.commit()
-            flash('Team opgeslagen.', 'success')
+            flash('Rood team opgeslagen.', 'success')
+
+        elif action == 'clear_rood':
+            RoodEntry.query.filter_by(participant_id=pid).delete()
+            db.session.commit()
+            flash('Rood team gewist.', 'warning')
+
         return redirect(url_for('admin_teams', pid=pid))
 
     current = Participant.query.get_or_404(pid) if pid else None
     geel_ids = set()
-    rood_ids = set()
+    current_rood = []
     if current:
-        geel_ids = {s.rider_id for s in Selection.query.filter_by(participant_id=pid, type='geel').all()}
-        rood_ids = {s.rider_id for s in Selection.query.filter_by(participant_id=pid, type='rood').all()}
+        geel_ids = {s.rider_id for s in
+                    Selection.query.filter_by(participant_id=pid, type='geel').all()}
+        current_rood = RoodEntry.query.filter_by(participant_id=pid)\
+            .order_by(RoodEntry.position).all()
 
     return render_template('admin/teams.html', participants=participants, riders=riders,
-                           current=current, geel_ids=geel_ids, rood_ids=rood_ids,
+                           current=current, geel_ids=geel_ids,
+                           current_rood=current_rood,
                            max_geel=MAX_GEEL, max_rood=MAX_ROOD)
 
 
@@ -938,27 +1023,38 @@ def admin_import_teams():
                 p_name = r['participant']
                 p = Participant.query.filter_by(name=p_name).first()
                 if not p:
-                    # Auto-create participant if not found
                     p = Participant(name=p_name)
                     db.session.add(p)
                     db.session.flush()
 
-                for sel_type, matches in (('geel', r['geel']), ('rood', r['rood'])):
-                    Selection.query.filter_by(participant_id=p.id, type=sel_type).delete()
-                    seen = set()
-                    for i, m in enumerate(matches):
-                        # Allow admin override from form
-                        override_key = f"override_{r['participant']}_{sel_type}_{i}"
-                        override_id = request.form.get(override_key)
-                        rider_id = int(override_id) if override_id else m.get('rider_id')
-                        if rider_id and rider_id not in seen:
-                            db.session.add(Selection(
-                                participant_id=p.id,
-                                rider_id=rider_id,
-                                type=sel_type
-                            ))
-                            seen.add(rider_id)
-                            saved += 1
+                # Geel: saved as Selection (rider_id required)
+                Selection.query.filter_by(participant_id=p.id, type='geel').delete()
+                seen = set()
+                for i, m in enumerate(r['geel']):
+                    override_key = f"override_{r['participant']}_geel_{i}"
+                    override_id = request.form.get(override_key)
+                    rider_id = int(override_id) if override_id else m.get('rider_id')
+                    if rider_id and rider_id not in seen:
+                        db.session.add(Selection(
+                            participant_id=p.id, rider_id=rider_id, type='geel'))
+                        seen.add(rider_id)
+                        saved += 1
+
+                # Rood: saved as RoodEntry (free-text + optional match)
+                RoodEntry.query.filter_by(participant_id=p.id).delete()
+                for i, m in enumerate(r['rood']):
+                    override_key = f"override_{r['participant']}_rood_{i}"
+                    override_id = request.form.get(override_key)
+                    rider_id = int(override_id) if override_id else m.get('rider_id')
+                    raw_name = m.get('raw', '').strip()
+                    if raw_name:
+                        db.session.add(RoodEntry(
+                            participant_id=p.id,
+                            custom_name=raw_name,
+                            matched_rider_id=rider_id if rider_id else None,
+                            position=i + 1,
+                        ))
+                        saved += 1
 
             db.session.commit()
             session.pop('teams_csv', None)

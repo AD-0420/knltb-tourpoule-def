@@ -220,23 +220,22 @@
         <span class="font-bold text-white">🔴 Rood team – optioneel, 0 of precies 15 renners</span>
         <span id="rood-counter" class="text-sm font-bold bg-white text-red-600 px-3 py-1 rounded-full">0 / 15</span>
       </div>
-      <div class="p-4">
-        <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 mb-3">
-          <strong>Optioneel:</strong> doe je niet mee aan het Rode Lantaarn Klassement? Sla deze stap dan gewoon over.
+      <div class="p-4 space-y-3">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+          <strong>Optioneel:</strong> doe je niet mee? Klik dan op "Geen rood team".
+          Je mag <strong>elke renner</strong> invullen — ook renners die (nog) niet op de startlijst staan.
+          Typ gewoon de naam, de beheerder koppelt ze later aan de officiële startlijst.
         </div>
-        <div class="flex items-center gap-2 mb-3 border border-gray-200 rounded-xl px-3 py-2">
-          <i class="bi bi-search text-gray-400"></i>
-          <input type="text" id="search-rood-pub" placeholder="Zoek renner op naam…"
-                 class="flex-1 text-sm focus:outline-none bg-transparent">
-          <button type="button" onclick="clearSearch('search-rood-pub','grid-rood-pub')"
-                  class="text-xs text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-        <div class="rider-grid rood-grid" id="grid-rood-pub">
-          {% for r in riders %}
-          <label id="lbl-rood-{{ r.id }}">
-            <input type="checkbox" name="rood_riders" value="{{ r.id }}" class="rood-pub-cb">
-            <span>{{ r.name }}</span>
-          </label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+          {% for i in range(1, 16) %}
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-400 w-5 text-right flex-shrink-0 font-mono">{{ i }}</span>
+            <input type="text" name="rood_name_{{ i }}"
+                   class="rood-text-input w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
+                   placeholder="Naam renner…"
+                   autocomplete="off">
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -413,9 +412,9 @@ function nextStep(from) {
     }
   }
   if (from === 3) {
-    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
+    const n = [...document.querySelectorAll('.rood-text-input')].filter(i => i.value.trim()).length;
     if (n > 0 && n !== MAX_ROOD) {
-      alert(`Kies precies ${MAX_ROOD} renners voor je rood team, of laat het leeg.`);
+      alert(`Vul precies ${MAX_ROOD} namen in voor je rood team, of laat alles leeg (nu: ${n}).`);
       return;
     }
   }
@@ -438,39 +437,29 @@ document.querySelectorAll('.geel-pub-cb').forEach(cb => {
   cb.addEventListener('change', () => {
     const n = document.querySelectorAll('.geel-pub-cb:checked').length;
     if (n > MAX_GEEL) { cb.checked = false; }
-    // Disable in rood if checked in geel
-    syncCrossTeam();
     updateCounter('geel-pub-cb', 'geel-counter', MAX_GEEL);
   });
 });
 
-document.querySelectorAll('.rood-pub-cb').forEach(cb => {
-  cb.addEventListener('change', () => {
-    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
-    if (n > MAX_ROOD) { cb.checked = false; }
-    syncCrossTeam();
-    updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
-  });
+// Rood: count non-empty text inputs
+function updateRoodCounter() {
+  const n = [...document.querySelectorAll('.rood-text-input')].filter(i => i.value.trim()).length;
+  const el = document.getElementById('rood-counter');
+  if (!el) return;
+  el.textContent = `${n} / ${MAX_ROOD}`;
+  el.className = el.className.replace(/bg-\S+|text-\S+(?=\s|$)/g, '').trim();
+  if (n === MAX_ROOD)    el.classList.add('bg-green-600', 'text-white');
+  else if (n > MAX_ROOD) el.classList.add('bg-red-800', 'text-white');
+  else if (n > 0)        el.classList.add('bg-white', 'text-orange-600');
+  else                   el.classList.add('bg-white', 'text-red-600');
+}
+document.querySelectorAll('.rood-text-input').forEach(inp => {
+  inp.addEventListener('input', updateRoodCounter);
 });
 
-function syncCrossTeam() {
-  // Renner in geel → disable in rood, vice versa
-  const geelVals = new Set([...document.querySelectorAll('.geel-pub-cb:checked')].map(c => c.value));
-  const roodVals = new Set([...document.querySelectorAll('.rood-pub-cb:checked')].map(c => c.value));
-  document.querySelectorAll('.geel-pub-cb').forEach(cb => {
-    cb.disabled = roodVals.has(cb.value) && !cb.checked;
-    document.querySelector(`#lbl-geel-${cb.value} span`).style.opacity = cb.disabled ? '0.3' : '1';
-  });
-  document.querySelectorAll('.rood-pub-cb').forEach(cb => {
-    cb.disabled = geelVals.has(cb.value) && !cb.checked;
-    document.querySelector(`#lbl-rood-${cb.value} span`).style.opacity = cb.disabled ? '0.3' : '1';
-  });
-}
-
 function clearRood() {
-  document.querySelectorAll('.rood-pub-cb:checked').forEach(cb => cb.checked = false);
-  syncCrossTeam();
-  updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+  document.querySelectorAll('.rood-text-input').forEach(i => i.value = '');
+  updateRoodCounter();
   goToStep(HAS_BONUS ? 4 : 4);
 }
 
@@ -490,7 +479,6 @@ function clearSearch(inputId, gridId) {
   document.querySelectorAll('#' + gridId + ' label').forEach(l => l.style.display = '');
 }
 setupSearch('search-geel-pub', 'grid-geel-pub');
-setupSearch('search-rood-pub', 'grid-rood-pub');
 
 // ── Overzicht ─────────────────────────────────────────────────────────────────
 function updateOverview() {
@@ -502,14 +490,15 @@ function updateOverview() {
   document.getElementById('overzicht-geel').innerHTML =
     geelCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
 
-  const roodCbs = [...document.querySelectorAll('.rood-pub-cb:checked')];
-  document.getElementById('ov-rood-count').textContent = roodCbs.length;
+  const roodVals = [...document.querySelectorAll('.rood-text-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  document.getElementById('ov-rood-count').textContent = roodVals.length;
   const roodSec = document.getElementById('ov-rood-section');
-  if (roodCbs.length === 0) {
+  if (roodVals.length === 0) {
     roodSec.innerHTML = '<div class="p-4 text-xs text-gray-400 italic">Geen rood team ingeschreven.</div>';
   } else {
     document.getElementById('overzicht-rood').innerHTML =
-      roodCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
+      roodVals.map(n => `<div>• ${n}</div>`).join('');
   }
 
   if (HAS_BONUS) {
