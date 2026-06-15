@@ -831,6 +831,80 @@ def match_rider_name(raw, rider_index, threshold=80):
     return None, 0, False
 
 
+PCS_STARTLIST_URL = 'https://www.procyclingstats.com/race/tour-de-france/2026/startlist'
+
+
+@app.route('/admin/scrape-startlist', methods=['GET', 'POST'])
+@require_admin
+def admin_scrape_startlist():
+    import requests
+    from bs4 import BeautifulSoup
+
+    scraped = None
+    error = None
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'scrape':
+            try:
+                resp = requests.get(
+                    PCS_STARTLIST_URL,
+                    headers={'User-Agent': 'Mozilla/5.0 (compatible; KNLTB-Tourpoule/1.0)'},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, 'html.parser')
+
+                riders_found = []
+                # PCS startlist: rider links are /rider/... inside ul.startlist_v4
+                for a in soup.select('ul.startlist_v4 a[href*="/rider/"]'):
+                    name = a.get_text(strip=True)
+                    if name and len(name) > 3 and name != name.lower():
+                        riders_found.append(name)
+
+                # Fallback: any rider link on the page
+                if not riders_found:
+                    seen = set()
+                    for a in soup.find_all('a', href=True):
+                        href = a['href']
+                        if '/rider/' in href and href.count('/') >= 2:
+                            name = a.get_text(strip=True)
+                            if name and 2 < len(name) < 50 and ' ' in name and name not in seen:
+                                riders_found.append(name)
+                                seen.add(name)
+
+                if not riders_found:
+                    error = 'Geen renners gevonden op de pagina. Mogelijk is de startlijst nog niet beschikbaar.'
+                else:
+                    existing = {r.name for r in Rider.query.all()}
+                    scraped = []
+                    for name in riders_found:
+                        scraped.append({
+                            'name': name,
+                            'new': name not in existing,
+                        })
+
+            except requests.exceptions.RequestException as e:
+                error = f'Kon de pagina niet ophalen: {e}'
+
+        elif action == 'import':
+            names = request.form.getlist('import_names')
+            added = 0
+            for name in names:
+                name = name.strip()
+                if name and not Rider.query.filter_by(name=name).first():
+                    db.session.add(Rider(name=name))
+                    added += 1
+            db.session.commit()
+            flash(f'{added} renners geïmporteerd van PCS.', 'success')
+            return redirect(url_for('admin_renners'))
+
+    return render_template('admin/scrape_startlist.html',
+                           scraped=scraped, error=error,
+                           url=PCS_STARTLIST_URL)
+
+
 @app.route('/admin/import-csv', methods=['GET', 'POST'])
 @require_admin
 def admin_import_csv():

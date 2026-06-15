@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}PCS Startlijst importeren – Admin{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
+  <div class="w-full px-6 lg:px-10">
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">🌐 Startlijst importeren via PCS</h1>
+    <p class="text-gray-400 mt-1">Haalt rennersnamen automatisch op van ProCyclingStats</p>
+  </div>
+</div>
+
+<div class="w-full px-6 lg:px-10 pb-12 space-y-6">
+
+  <!-- Scrape form -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Bron</div>
+        <div class="p-5 space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">URL</label>
+            <a href="{{ url }}" target="_blank"
+               class="text-xs text-blue-600 hover:underline break-all">{{ url }}</a>
+          </div>
+          <form method="post">
+            <input type="hidden" name="action" value="scrape">
+            <button class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-yellow-300 transition-colors">
+              <i class="bi bi-cloud-download mr-1"></i> Startlijst ophalen
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-700 space-y-2">
+        <p><strong>Hoe werkt het?</strong></p>
+        <ol class="list-decimal list-inside space-y-1 text-xs">
+          <li>Klik op "Startlijst ophalen"</li>
+          <li>Controleer de gevonden renners</li>
+          <li>Vink eventueel renners uit die je <em>niet</em> wilt importeren</li>
+          <li>Klik op "Importeren"</li>
+        </ol>
+        <p class="text-xs text-blue-500">Bestaande renners worden automatisch overgeslagen.</p>
+      </div>
+    </div>
+
+    <div class="md:col-span-2">
+      {% if error %}
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-5">
+        <div class="flex items-start gap-3">
+          <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
+          <div>
+            <div class="font-semibold text-red-800 mb-1">Fout bij ophalen</div>
+            <div class="text-sm text-red-700">{{ error }}</div>
+            <div class="mt-3 text-xs text-red-500">
+              Mogelijk is de startlijst 2026 nog niet gepubliceerd op PCS.
+              Probeer het later opnieuw of gebruik de
+              <a href="{{ url_for('admin_renners') }}" class="underline font-semibold">bulk import</a>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% elif scraped %}
+      {% set new_count = scraped|selectattr('new')|list|length %}
+      {% set exist_count = scraped|length - new_count %}
+
+      <div class="bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mb-4 flex items-center justify-between text-sm text-green-800">
+        <span>
+          <i class="bi bi-check-circle-fill text-green-500 mr-1"></i>
+          <strong>{{ scraped|length }}</strong> renners gevonden —
+          <strong>{{ new_count }}</strong> nieuw,
+          <strong>{{ exist_count }}</strong> al aanwezig
+        </span>
+      </div>
+
+      <form method="post">
+        <input type="hidden" name="action" value="import">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 bg-zinc-800">
+            <span class="font-semibold text-white">Gevonden renners</span>
+            <div class="flex gap-2">
+              <button type="button" onclick="toggleAll(true)"
+                      class="text-xs text-tdf-yellow hover:text-yellow-300">Alles aan</button>
+              <span class="text-gray-600">·</span>
+              <button type="button" onclick="toggleAll(false)"
+                      class="text-xs text-gray-400 hover:text-gray-200">Alles uit</button>
+            </div>
+          </div>
+          <div class="overflow-y-auto" style="max-height:460px">
+            <table class="w-full text-sm">
+              <thead class="sticky top-0 bg-gray-50 border-b border-gray-200">
+                <tr class="text-xs text-gray-400 uppercase tracking-wide text-left">
+                  <th class="pl-4 py-2 w-10">
+                    <input type="checkbox" id="check-all" checked onchange="toggleAll(this.checked)" class="accent-tdf-yellow">
+                  </th>
+                  <th class="py-2">Naam</th>
+                  <th class="pr-4 py-2 w-28">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                {% for r in scraped %}
+                <tr class="{% if not r.new %}bg-gray-50{% else %}hover:bg-yellow-50{% endif %} transition-colors">
+                  <td class="pl-4 py-2">
+                    <input type="checkbox" name="import_names" value="{{ r.name }}"
+                           class="scrape-cb accent-tdf-yellow"
+                           {% if r.new %}checked{% endif %}
+                           {% if not r.new %}disabled{% endif %}>
+                  </td>
+                  <td class="py-2 font-medium {% if not r.new %}text-gray-400{% else %}text-gray-800{% endif %}">
+                    {{ r.name }}
+                  </td>
+                  <td class="pr-4 py-2">
+                    {% if r.new %}
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Nieuw</span>
+                    {% else %}
+                    <span class="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Al aanwezig</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+          <button type="submit"
+                  class="flex-1 bg-green-600 text-white font-bold px-4 py-3 rounded-xl hover:bg-green-700 transition-colors">
+            <i class="bi bi-people-fill mr-1"></i> Geselecteerde renners importeren
+          </button>
+          <a href="{{ url_for('admin_renners') }}"
+             class="border border-gray-300 text-gray-600 px-6 py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+            Annuleren
+          </a>
+        </div>
+      </form>
+
+      {% else %}
+      <div class="bg-white rounded-2xl shadow-sm text-center py-16 text-gray-400">
+        <div class="text-5xl mb-3">🌐</div>
+        <p class="text-sm">Klik op "Startlijst ophalen" om te beginnen.</p>
+        <p class="text-xs mt-2 text-gray-300">De Tour de France 2026 startlijst verschijnt op PCS zodra hij officieel is.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAll(val) {
+  document.querySelectorAll('.scrape-cb:not(:disabled)').forEach(cb => cb.checked = val);
+  const allCb = document.getElementById('check-all');
+  if (allCb) allCb.checked = val;
+}
+</script>
+{% endblock %}
