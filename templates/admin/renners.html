@@ -43,6 +43,17 @@
       <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-700">
         <strong>💡 Tip:</strong> Kopieer de TdF 2026 startlijst in het bulk-veld. Formaat: <code class="bg-blue-100 px-1 rounded">ACHTERNAAM Voornaam</code>, één per regel. Bestaande renners worden overgeslagen.
       </div>
+      {% if riders %}
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
+        <div class="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">Gevaarlijke zone</div>
+        <form method="post" onsubmit="return confirm('Weet je zeker dat je ALLE {{ riders|length }} renners wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')">
+          <input type="hidden" name="action" value="delete_all">
+          <button class="w-full bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
+            <i class="bi bi-trash3 mr-1"></i> Alle {{ riders|length }} renners verwijderen
+          </button>
+        </form>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Right: rider list -->

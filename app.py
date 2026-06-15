@@ -585,6 +585,11 @@ def admin_renners():
                 db.session.delete(r)
                 db.session.commit()
                 flash(f'{r.name} verwijderd.', 'warning')
+        elif action == 'delete_all':
+            count = Rider.query.count()
+            Rider.query.delete()
+            db.session.commit()
+            flash(f'Alle {count} renners verwijderd.', 'warning')
         elif action == 'toggle_niet_gestart':
             rid = request.form.get('rider_id')
             r = Rider.query.get(rid)
