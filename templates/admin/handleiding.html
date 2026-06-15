@@ -94,15 +94,25 @@
               <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">1.1</span>
               Startlijst TdF 2026 invoeren
             </h3>
-            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>Ga naar <strong>Admin → Renners beheren</strong></li>
-              <li>Gebruik de <strong>Bulk import</strong> (rechter kolom)</li>
-              <li>Plak de volledige startlijst: formaat <code class="bg-gray-100 px-1 rounded">ACHTERNAAM Voornaam</code>, één per regel</li>
-              <li>De officiële startlijst vind je op <a href="https://www.procyclingstats.com/race/tour-de-france/2026/startlist" target="_blank" class="text-amber-600 underline">procyclingstats.com</a></li>
-              <li>Klik <strong>Bulk toevoegen</strong> — bestaande renners worden automatisch overgeslagen</li>
-            </ol>
-            <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
-              💡 <strong>Tip:</strong> De startlijst wordt doorgaans 1–2 weken voor de Tour gepubliceerd. Controleer ook de wildcards!
+            <p class="text-sm text-gray-600 mb-3">De app kan de startlijst <strong>automatisch ophalen</strong> van ProCyclingStats. Dit is de snelste methode.</p>
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-3">
+              <div class="font-semibold text-green-800 text-sm mb-2">🌐 Aanbevolen: automatisch via PCS</div>
+              <ol class="space-y-1 text-xs text-green-700 list-decimal list-inside">
+                <li>Ga naar <strong>Admin → Startlijst van PCS</strong></li>
+                <li>Klik op <strong>"Startlijst ophalen"</strong> — de app haalt alle namen automatisch op</li>
+                <li>Controleer de preview en klik <strong>"Importeren"</strong></li>
+              </ol>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div class="font-semibold text-gray-700 text-sm mb-2">📋 Handmatig (alternatief)</div>
+              <ol class="space-y-1 text-xs text-gray-600 list-decimal list-inside">
+                <li>Ga naar <strong>Admin → Renners beheren → Bulk import</strong></li>
+                <li>Plak de startlijst in formaat <code class="bg-gray-100 px-1 rounded">ACHTERNAAM Voornaam</code>, één per regel</li>
+                <li>Klik <strong>Bulk toevoegen</strong></li>
+              </ol>
+            </div>
+            <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⏰ <strong>Timing:</strong> De definitieve startlijst verschijnt op PCS doorgaans 1–2 dagen vóór de Tour start (rond 3–4 juli). Ploegopstellingen zijn al eerder beschikbaar — gebruik die voor een voorlopige lijst. Deelnemers mogen voor rood ook namen invullen die nog niet in de lijst staan (zie §1.3).
             </div>
           </div>
 
@@ -136,9 +146,13 @@
             <ul class="mt-3 space-y-1 text-sm text-gray-600">
               <li>• Deel deze link met alle collega's</li>
               <li>• Het formulier sluit automatisch op <strong>3 juli 2026 om 17:00</strong></li>
-              <li>• Deelnemers kiezen {{ max_geel }} renners voor geel en optioneel {{ max_rood }} voor rood</li>
+              <li>• Deelnemers kiezen {{ max_geel }} renners voor <strong>geel</strong> uit de startlijst (checkboxes)</li>
+              <li>• Voor <strong>rood</strong> vullen deelnemers 15 namen in als vrije tekst — elke renner mag, ook renners die nog niet in de startlijst staan</li>
               <li>• Nieuwe deelnemers verschijnen direct in <strong>Admin → Deelnemers</strong></li>
             </ul>
+            <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+              💡 <strong>Waarom vrije tekst voor rood?</strong> De definitieve startlijst is pas 1–2 dagen voor de Tour beschikbaar, maar deelnemers willen graag juist onbekende knechten kiezen voor het Rode Lantaarn klassement. Vrije tekst geeft die vrijheid. Na bevestiging van de startlijst koppel je de namen via <strong>Admin → Teams invoeren → Rood</strong>.
+            </div>
           </div>
         </div>
       </section>
@@ -175,15 +189,29 @@
           <div class="border-t border-gray-100 pt-6">
             <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
               <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">2.3</span>
-              Handmatig teams invoeren
+              Handmatig teams invoeren of aanpassen
             </h3>
-            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>Ga naar <strong>Admin → Teams invoeren</strong></li>
-              <li>Selecteer een deelnemer bovenaan</li>
-              <li>Vink {{ max_geel }} renners aan voor het Geel team (zoekbalk beschikbaar)</li>
-              <li>Optioneel: vink {{ max_rood }} renners aan voor het Rood team</li>
-              <li>Sla elk team apart op</li>
-            </ol>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <div class="font-semibold text-gray-800 text-sm mb-2">🟡 Geel team</div>
+                <ol class="space-y-1 text-xs text-gray-600 list-decimal list-inside">
+                  <li>Ga naar <strong>Admin → Teams invoeren</strong></li>
+                  <li>Selecteer een deelnemer bovenaan</li>
+                  <li>Vink {{ max_geel }} renners aan (zoekbalk beschikbaar)</li>
+                  <li>Klik <strong>Geel team opslaan</strong></li>
+                </ol>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div class="font-semibold text-gray-800 text-sm mb-2">🔴 Rood team</div>
+                <ol class="space-y-1 text-xs text-gray-600 list-decimal list-inside">
+                  <li>Selecteer dezelfde deelnemer</li>
+                  <li>Vul in het Rood-blok de namen in als vrije tekst (1 per veld)</li>
+                  <li>Koppel elke naam optioneel via het dropdown aan een renner op de startlijst</li>
+                  <li>Klik <strong>Rood team opslaan</strong></li>
+                </ol>
+                <p class="text-xs text-red-600 mt-2">Gebruik dit ook om een team aan te passen na een uitvaller (zie §3.4).</p>
+              </div>
+            </div>
           </div>
 
           <div class="border-t border-gray-100 pt-6">
@@ -256,6 +284,32 @@
           <div class="border-t border-gray-100 pt-6">
             <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
               <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">3.3</span>
+              Renners die niet starten (uitvallers vóór de Tour)
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Als een renner vlak voor de Tour geblesseerd uitvalt en niet start, volg dan dit stappenplan:</p>
+            <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside mb-4">
+              <li>Ga naar <strong>Admin → Renners beheren</strong></li>
+              <li>Klik op <strong>"— Actief"</strong> naast de betreffende renner — dit wordt <strong>"✗ Niet gestart"</strong></li>
+              <li>Ga naar het <strong>Admin Dashboard</strong> — er verschijnt een oranje waarschuwingskaart met de namen van alle betroffen deelnemers</li>
+              <li>Contacteer die deelnemers (bijv. via Teams of e-mail) zodat zij een vervangende renner kunnen opgeven</li>
+              <li>Pas hun team aan via <strong>Admin → Teams invoeren</strong>:</li>
+            </ol>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-4 mb-3">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-800">
+                <strong>🟡 Geel team:</strong> Vink de niet-gestarte renner uit, vink een nieuwe aan → <em>Geel team opslaan</em>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800">
+                <strong>🔴 Rood team:</strong> Pas de naam in het tekstveld aan en koppel aan de juiste renner via het dropdown → <em>Rood team opslaan</em>
+              </div>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+              ℹ️ Een niet-gestarte renner scoort automatisch 0 punten — je hoeft niets extra's te doen voor de puntentelling. De "niet gestart" markering is puur voor de melding en overzichtelijkheid.
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <span class="bg-tdf-yellow text-zinc-900 text-xs font-bold px-2 py-0.5 rounded-full">3.4</span>
               Fouten herstellen
             </h3>
             <p class="text-sm text-gray-600">Een etapperesultaat verkeerd ingevoerd? Geen probleem:</p>
@@ -484,8 +538,10 @@
                  'Ga naar Admin → Renners beheren → voeg de renner handmatig toe. Bestaande teams worden niet aangepast; de renner kan nu wel geselecteerd worden.'),
                 ('Kan ik een deelnemer verwijderen?',
                  'Ja, in Admin → Deelnemers & Clusters → klik op ✕ naast de naam. Let op: dit verwijdert ook alle selecties van die deelnemer.'),
-                ('Wat gebeurt er als een renner uitvalt in de Tour?',
-                 'Niets speciaals — die renner scoort gewoon 0 punten voor de etappes die hij niet heeft gereden. Je hoeft niets te doen.'),
+                ('Wat gebeurt er als een renner vóór de Tour niet start?',
+                 'Markeer hem als "niet gestart" via Admin → Renners beheren. Het dashboard toont direct welke deelnemers die renner gekozen hebben. Contacteer hen en pas hun team aan via Teams invoeren. De renner scoort automatisch 0 punten — geen extra actie nodig voor de puntentelling.'),
+                ('Wat gebeurt er als een renner tijdens de Tour uitvalt?',
+                 'Niets speciaals — die renner scoort gewoon 0 punten voor de etappes die hij niet heeft gereden. De etappes die hij al reed tellen gewoon mee. Je hoeft niets te doen.'),
                 ('De app doet het niet of ik zie een foutmelding',
                  'Ga naar railway.app → jouw project → Deployments. Kijk of de laatste deployment groen is. Bij problemen: klik "Redeploy".')
               ] %}
