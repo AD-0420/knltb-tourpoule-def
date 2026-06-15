@@ -110,6 +110,7 @@
                     <input type="checkbox" id="check-all" checked onchange="toggleAll(this.checked)" class="accent-tdf-yellow">
                   </th>
                   <th class="py-2">Naam</th>
+                  <th class="py-2">Team</th>
                   <th class="pr-4 py-2 w-28">Status</th>
                 </tr>
               </thead>
@@ -121,9 +122,13 @@
                            class="scrape-cb accent-tdf-yellow"
                            {% if r.new %}checked{% endif %}
                            {% if not r.new %}disabled{% endif %}>
+                    <input type="hidden" name="import_teams" value="{{ r.team or '' }}">
                   </td>
                   <td class="py-2 font-medium {% if not r.new %}text-gray-400{% else %}text-gray-800{% endif %}">
                     {{ r.name }}
+                  </td>
+                  <td class="py-2 text-xs {% if not r.new %}text-gray-300{% else %}text-gray-500{% endif %}">
+                    {{ r.team or '—' }}
                   </td>
                   <td class="pr-4 py-2">
                     {% if r.new %}

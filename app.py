@@ -22,13 +22,17 @@ db.init_app(app)
 # Maak databasetabellen automatisch aan bij opstarten (ook op Railway/productie)
 with app.app_context():
     db.create_all()
-    # Migrate: add niet_gestart column to existing rider tables
+    # Migrate: add columns to existing rider tables
     with db.engine.connect() as _conn:
-        try:
-            _conn.execute(db.text("ALTER TABLE rider ADD COLUMN niet_gestart BOOLEAN DEFAULT 0"))
-            _conn.commit()
-        except Exception:
-            pass
+        for ddl in [
+            "ALTER TABLE rider ADD COLUMN niet_gestart BOOLEAN DEFAULT 0",
+            "ALTER TABLE rider ADD COLUMN team VARCHAR(150)",
+        ]:
+            try:
+                _conn.execute(db.text(ddl))
+                _conn.commit()
+            except Exception:
+                pass
 
 POINTS_TABLE = {1: 35, 2: 25, 3: 20, 4: 18, 5: 16, 6: 14, 7: 12,
                 8: 10, 9: 8, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1}
@@ -434,8 +438,15 @@ def inschrijven():
         db.session.commit()
         return redirect(url_for('inschrijven_bevestiging', naam=naam))
 
-    return render_template('inschrijven.html', riders=riders, questions=questions,
-                           gesloten=gesloten, deadline=INSCHRIJF_DEADLINE,
+    # Group riders by team for grouped display; riders without team go under 'Overig'
+    riders_by_team = {}
+    for r in sorted(Rider.query.order_by(Rider.team, Rider.name).all(),
+                    key=lambda r: (r.team or 'zzz_overig', r.name)):
+        team_key = r.team or 'Overig'
+        riders_by_team.setdefault(team_key, []).append(r)
+
+    return render_template('inschrijven.html', riders=riders, riders_by_team=riders_by_team,
+                           questions=questions, gesloten=gesloten, deadline=INSCHRIJF_DEADLINE,
                            inschrijfgeld=INSCHRIJFGELD, now=now,
                            max_geel=MAX_GEEL, max_rood=MAX_ROOD)
 
@@ -544,17 +555,26 @@ def admin_renners():
         action = request.form.get('action')
         if action == 'add':
             name = request.form.get('name', '').strip()
+            team = request.form.get('team', '').strip() or None
             if name and not Rider.query.filter_by(name=name).first():
-                db.session.add(Rider(name=name))
+                db.session.add(Rider(name=name, team=team))
                 db.session.commit()
                 flash(f'{name} toegevoegd.', 'success')
         elif action == 'bulk_add':
-            names = request.form.get('names', '')
+            raw = request.form.get('names', '')
             added = 0
-            for name in names.strip().splitlines():
-                name = name.strip()
+            parsed = _parse_names_from_pcs_html(raw)
+            if not parsed:
+                # Fallback: treat every non-empty line as a name with no team
+                for line in raw.strip().splitlines():
+                    line = line.strip()
+                    if line:
+                        parsed.append({'name': line, 'team': None})
+            for entry in parsed:
+                name = entry['name'].strip()
+                team = entry.get('team') or None
                 if name and not Rider.query.filter_by(name=name).first():
-                    db.session.add(Rider(name=name))
+                    db.session.add(Rider(name=name, team=team))
                     added += 1
             db.session.commit()
             flash(f'{added} renners toegevoegd.', 'success')
@@ -835,57 +855,97 @@ PCS_STARTLIST_URL = 'https://www.procyclingstats.com/race/tour-de-france/2026/st
 
 
 def _parse_names_from_pcs_html(html_or_text):
-    """Extract LASTNAME Firstname names from PCS page HTML or plain text."""
+    """Extract riders from PCS HTML or plain text.
+
+    Returns list of dicts: [{'name': str, 'team': str|None}]
+    """
     import re
     from bs4 import BeautifulSoup
 
-    names = []
+    riders = []
     seen = set()
 
-    # Try HTML parsing first (most reliable)
+    # ── HTML path (most reliable) ─────────────────────────────────────────────
     if '<html' in html_or_text.lower() or '<a ' in html_or_text.lower():
         soup = BeautifulSoup(html_or_text, 'html.parser')
-        for a in soup.select('ul.startlist_v4 a[href*="/rider/"]'):
-            name = a.get_text(strip=True)
-            if name and 3 < len(name) < 60 and ' ' in name and name not in seen:
-                names.append(name)
-                seen.add(name)
-        if not names:
+
+        # PCS structure: ul.startlist_v4 > li.team > (team name in b/span) + ul > li > a[href*=/rider/]
+        team_lis = soup.select('ul.startlist_v4 > li')
+        if team_lis:
+            for team_li in team_lis:
+                # Team name is usually in the first <b> or <a> that is NOT a /rider/ link
+                team_name = None
+                for tag in team_li.find_all(['b', 'a'], recursive=False):
+                    txt = tag.get_text(strip=True)
+                    if txt and '/rider/' not in (tag.get('href') or ''):
+                        team_name = txt
+                        break
+                if team_name is None:
+                    b = team_li.find('b')
+                    team_name = b.get_text(strip=True) if b else None
+
+                for a in team_li.select('a[href*="/rider/"]'):
+                    name = a.get_text(strip=True)
+                    if name and 3 < len(name) < 60 and ' ' in name and name not in seen:
+                        riders.append({'name': name, 'team': team_name})
+                        seen.add(name)
+
+        # Fallback: flat rider link scan without team info
+        if not riders:
             for a in soup.find_all('a', href=True):
                 if '/rider/' in a['href']:
                     name = a.get_text(strip=True)
                     if name and 3 < len(name) < 60 and ' ' in name and name not in seen:
-                        names.append(name)
+                        riders.append({'name': name, 'team': None})
                         seen.add(name)
 
-    # Plain text fallback: look for LASTNAME Firstname patterns
-    if not names:
+    # ── Plain text path ───────────────────────────────────────────────────────
+    if not riders:
+        current_team = None
         for line in html_or_text.splitlines():
             line = line.strip()
+            if not line:
+                continue
+
+            # Strip leading hyphen/dash (PCS plain-text paste: "- LASTNAME Firstname")
+            if line.startswith('-'):
+                line = line.lstrip('-').strip()
+
             # Strip leading bib number
             line = re.sub(r'^\d+\s+', '', line).strip()
+            if not line:
+                continue
+
             parts = line.split()
             if len(parts) < 2 or len(parts) > 8:
+                # Single-word or very long lines → skip, but don't use as team name
                 continue
+
             # Lastname = leading all-caps tokens, firstname = rest
             lastname_parts, firstname_parts, in_last = [], [], True
             for p in parts:
-                clean = p.replace('-', '').replace("'", '')
+                clean = p.replace('-', '').replace("'", '').replace('’', '')
                 if in_last and clean.isalpha() and clean == clean.upper() and len(clean) >= 2:
                     lastname_parts.append(p)
                 else:
                     in_last = False
                     firstname_parts.append(p)
+
             if lastname_parts and firstname_parts:
-                # Skip team abbreviations like "UAE Team Emirates" (single short all-caps token)
+                # Skip team abbreviations like "UAE Team Emirates" (single ≤3-char token)
                 if len(lastname_parts) == 1 and len(lastname_parts[0]) <= 3:
+                    # Treat remainder as team name
+                    current_team = line
                     continue
                 name = ' '.join(lastname_parts) + ' ' + ' '.join(firstname_parts)
                 if name not in seen and len(name) < 60:
-                    names.append(name)
+                    riders.append({'name': name, 'team': current_team})
                     seen.add(name)
+            else:
+                # No rider pattern → treat as team name for subsequent lines
+                current_team = line
 
-    return names
+    return riders
 
 
 @app.route('/admin/scrape-startlist', methods=['GET', 'POST'])
@@ -930,7 +990,8 @@ def admin_scrape_startlist():
                     show_paste = True
                 else:
                     existing = {r.name for r in Rider.query.all()}
-                    scraped = [{'name': n, 'new': n not in existing} for n in riders_found]
+                    scraped = [{'name': r['name'], 'team': r['team'], 'new': r['name'] not in existing}
+                               for r in riders_found]
 
             except requests.exceptions.HTTPError as e:
                 if e.response is not None and e.response.status_code == 403:
@@ -956,15 +1017,21 @@ def admin_scrape_startlist():
                     show_paste = True
                 else:
                     existing = {r.name for r in Rider.query.all()}
-                    scraped = [{'name': n, 'new': n not in existing} for n in riders_found]
+                    scraped = [{'name': r['name'], 'team': r['team'], 'new': r['name'] not in existing}
+                               for r in riders_found]
 
         elif action == 'import':
             names = request.form.getlist('import_names')
+            teams = request.form.getlist('import_teams')
+            # teams list is parallel to names list; pad if missing
+            while len(teams) < len(names):
+                teams.append('')
             added = 0
-            for name in names:
+            for name, team in zip(names, teams):
                 name = name.strip()
+                team = team.strip() or None
                 if name and not Rider.query.filter_by(name=name).first():
-                    db.session.add(Rider(name=name))
+                    db.session.add(Rider(name=name, team=team))
                     added += 1
             db.session.commit()
             flash(f'{added} renners geïmporteerd.', 'success')

@@ -15,21 +15,24 @@
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">Renner toevoegen</div>
         <div class="p-4 space-y-4">
-          <form method="post" class="flex gap-2">
+          <form method="post" class="space-y-2">
             <input type="hidden" name="action" value="add">
             <input type="text" name="name" placeholder="ACHTERNAAM Voornaam" required
-                   class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
-            <button class="bg-tdf-yellow text-zinc-900 font-semibold px-3 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors whitespace-nowrap">
-              + Add
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            <input type="text" name="team" placeholder="Team (optioneel)"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
+            <button class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-3 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+              + Renner toevoegen
             </button>
           </form>
           <hr class="border-gray-100">
           <form method="post">
             <input type="hidden" name="action" value="bulk_add">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Bulk import (één naam per regel)
+              Bulk import (PCS-plakken of één naam per regel)
             </label>
-            <textarea name="names" rows="10" placeholder="POGAČAR Tadej&#10;VINGEGAARD Jonas&#10;VAN AERT Wout"
+            <textarea name="names" rows="10"
+                      placeholder="UAE Team Emirates&#10;-POGAČAR Tadej&#10;-AYUSO Juan&#10;&#10;Visma-Lease a Bike&#10;-VINGEGAARD Jonas"
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow mb-2 font-mono"></textarea>
             <button class="w-full bg-tdf-yellow text-zinc-900 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
               Bulk toevoegen
@@ -60,6 +63,7 @@
               <tr class="text-left text-xs text-tdf-yellow uppercase tracking-wider">
                 <th class="pl-4 py-3 w-12">#</th>
                 <th class="py-3">Naam</th>
+                <th class="py-3">Team</th>
                 <th class="py-3 text-center w-32">Niet gestart</th>
                 <th class="pr-4 py-3 w-10"></th>
               </tr>
@@ -70,6 +74,9 @@
                 <td class="pl-4 py-2 text-gray-400 font-mono text-xs">{{ loop.index }}</td>
                 <td class="py-2 font-medium {% if r.niet_gestart %}text-gray-400 line-through{% else %}text-gray-800{% endif %}">
                   {{ r.name }}
+                </td>
+                <td class="py-2 text-xs {% if r.niet_gestart %}text-gray-300{% else %}text-gray-400{% endif %}">
+                  {{ r.team or '—' }}
                 </td>
                 <td class="py-2 text-center">
                   <form method="post" class="inline">
@@ -92,7 +99,7 @@
                 </td>
               </tr>
               {% else %}
-              <tr><td colspan="4" class="text-center text-gray-400 py-8">Nog geen renners.</td></tr>
+              <tr><td colspan="5" class="text-center text-gray-400 py-8">Nog geen renners.</td></tr>
               {% endfor %}
             </tbody>
           </table>

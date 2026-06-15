@@ -21,6 +21,7 @@ class Participant(db.Model):
 class Rider(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False, unique=True)
+    team = db.Column(db.String(150), nullable=True)
     niet_gestart = db.Column(db.Boolean, default=False)
     selections = db.relationship('Selection', backref='rider', lazy=True)
     rood_entries = db.relationship('RoodEntry', foreign_keys='RoodEntry.matched_rider_id',
