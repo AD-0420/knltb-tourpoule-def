@@ -76,6 +76,39 @@ def get_rider_points_map():
     return points
 
 
+def get_participant_stage_points(participant_id):
+    """Return per-stage cumulative geel points for one participant.
+    Returns list of {'stage': int, 'pts': int, 'cumul': int} sorted by stage.
+    """
+    from collections import defaultdict
+    p = Participant.query.get(participant_id)
+    if not p:
+        return []
+
+    geel_rider_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
+    stage_pts = defaultdict(int)
+
+    for result in StageResult.query.all():
+        if result.rider_id in geel_rider_ids:
+            stage_pts[result.stage_id] += POINTS_TABLE.get(result.position, 0)
+
+    for jw in JerseyWearer.query.all():
+        if jw.rider_id in geel_rider_ids:
+            stage_pts[jw.stage_id] += JERSEY_DAILY_POINTS
+
+    stages = Stage.query.order_by(Stage.number).all()
+    stage_id_to_num = {s.id: s.number for s in stages}
+
+    rows = []
+    cumul = 0
+    for stage in stages:
+        pts = stage_pts.get(stage.id, 0)
+        cumul += pts
+        rows.append({'stage': stage.number, 'pts': pts, 'cumul': cumul})
+
+    return rows
+
+
 def get_participant_scores():
     """Return list of dicts with geel/rood scores per participant."""
     rider_points = get_rider_points_map()
@@ -145,6 +178,20 @@ def rood_klassement():
     return render_template('rood.html', standings=standings)
 
 
+@app.route('/eindstand')
+def eindstand():
+    scores = get_participant_scores()
+    geel = sorted(scores, key=lambda x: x['geel'], reverse=True)
+    for i, s in enumerate(geel):
+        s['geel_rank'] = i + 1
+    rood = sorted((s for s in scores if s['has_rood']), key=lambda x: x['rood'])
+    for i, s in enumerate(rood):
+        s['rood_rank'] = i + 1
+    stages_done = Stage.query.count()
+    return render_template('eindstand.html', geel=geel, rood=rood,
+                           stages_done=stages_done)
+
+
 @app.route('/deelnemer/<int:pid>')
 def deelnemer(pid):
     p = Participant.query.get_or_404(pid)
@@ -182,10 +229,13 @@ def deelnemer(pid):
                for ba in BonusAnswer.query.filter_by(participant_id=pid).all()}
 
     all_participants = Participant.query.order_by(Participant.name).all()
+    stage_points = get_participant_stage_points(pid)
+
     return render_template('deelnemer.html', p=p, geel_team=geel_team,
                            rood_team=rood_team, geel_total=geel_total,
                            rood_total=rood_total, questions=questions,
-                           answers=answers, participants=all_participants)
+                           answers=answers, participants=all_participants,
+                           stage_points=stage_points)
 
 
 @app.route('/etappes')
@@ -466,6 +516,40 @@ def admin_handleiding():
                            max_geel=MAX_GEEL,
                            max_rood=MAX_ROOD,
                            deadline=INSCHRIJF_DEADLINE)
+
+
+@app.route('/admin/export')
+@require_admin
+def admin_export():
+    import io
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+
+    # Header
+    geel_cols = [f'Geel {i}' for i in range(1, MAX_GEEL + 1)]
+    rood_cols = [f'Rood {i}' for i in range(1, MAX_ROOD + 1)]
+    writer.writerow(['Naam', 'Afdeling'] + geel_cols + rood_cols)
+
+    participants = Participant.query.order_by(Participant.name).all()
+    for p in participants:
+        geel = [s.rider.name for s in
+                sorted(p.selections, key=lambda s: s.rider.name)
+                if s.type == 'geel']
+        rood = [e.custom_name for e in
+                sorted(p.rood_entries, key=lambda e: e.position or 0)]
+        # Pad to fixed width
+        geel += [''] * (MAX_GEEL - len(geel))
+        rood += [''] * (MAX_ROOD - len(rood))
+        afdeling = p.cluster.name if p.cluster else ''
+        writer.writerow([p.name, afdeling] + geel + rood)
+
+    output.seek(0)
+    from flask import Response
+    return Response(
+        '﻿' + output.getvalue(),  # BOM for Excel UTF-8
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=tourpoule_deelnemers.csv'}
+    )
 
 
 @app.route('/admin')
