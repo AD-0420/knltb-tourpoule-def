@@ -101,8 +101,11 @@
             </a>
             <div class="border-t border-gray-100 my-1"></div>
             <p class="px-4 pt-1 pb-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Resultaten</p>
+            <a href="{{ url_for('admin_scrape_etappe') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 hover:bg-amber-50 font-medium">
+              <i class="bi bi-cloud-download text-amber-500"></i> Etappe scrapen via PCS
+            </a>
             <a href="{{ url_for('admin_etappe') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
-              <i class="bi bi-flag text-gray-400"></i> Etapperesultaten
+              <i class="bi bi-flag text-gray-400"></i> Etapperesultaten handmatig
             </a>
             <a href="{{ url_for('admin_eindklassement') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50">
               <i class="bi bi-trophy text-gray-400"></i> Eindklassementen

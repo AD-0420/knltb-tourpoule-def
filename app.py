@@ -663,6 +663,58 @@ def admin_teams():
                            max_geel=MAX_GEEL, max_rood=MAX_ROOD)
 
 
+@app.route('/admin/scrape-etappe', methods=['GET', 'POST'])
+@require_admin
+def admin_scrape_etappe():
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    scraped = None
+    error = None
+    stage_num = request.args.get('stage', type=int) or request.form.get('stage_num', type=int)
+    riders = Rider.query.order_by(Rider.name).all()
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'scrape':
+            if not stage_num:
+                error = 'Kies een etappenummer.'
+            else:
+                scraped, error = _scrape_stage_results(stage_num)
+
+        elif action == 'import':
+            stage_num = request.form.get('stage_num', type=int)
+            stage = Stage.query.filter_by(number=stage_num).first()
+            if not stage:
+                stage = Stage(number=stage_num)
+                db.session.add(stage)
+                db.session.flush()
+
+            StageResult.query.filter_by(stage_id=stage.id).delete()
+            JerseyWearer.query.filter_by(stage_id=stage.id).delete()
+
+            for pos in range(1, 16):
+                rid = request.form.get(f'pos_{pos}', type=int)
+                if rid:
+                    db.session.add(StageResult(stage_id=stage.id, position=pos,
+                                               rider_id=rid))
+            for jersey in ('yellow', 'green', 'polka', 'white'):
+                rid = request.form.get(f'jersey_{jersey}', type=int)
+                if rid:
+                    db.session.add(JerseyWearer(stage_id=stage.id,
+                                                jersey_type=jersey, rider_id=rid))
+            db.session.commit()
+            flash(f'Etappe {stage_num} opgeslagen.', 'success')
+            return redirect(url_for('admin_etappe', stage_num=stage_num))
+
+    return render_template('admin/scrape_etappe.html',
+                           scraped=scraped, error=error,
+                           stage_num=stage_num, riders=riders,
+                           jersey_labels=JERSEY_LABELS,
+                           points_table=POINTS_TABLE)
+
+
 @app.route('/admin/etappe', methods=['GET', 'POST'])
 @app.route('/admin/etappe/<int:stage_num>', methods=['GET', 'POST'])
 @require_admin
@@ -854,6 +906,83 @@ def match_rider_name(raw, rider_index, threshold=80):
 
 
 PCS_STARTLIST_URL = 'https://www.procyclingstats.com/race/tour-de-france/2026/startlist'
+PCS_RACE_PATH = 'race/tour-de-france/2026'
+PCS_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.7',
+}
+
+
+def _scrape_stage_results(stage_num):
+    """Fetch top-15 stage results from PCS.
+
+    Returns (results, error) where results is a list of dicts:
+    [{'pos': int, 'pcs_name': str, 'rider_id': int|None, 'match_score': int, 'auto': bool}]
+    """
+    import re
+    import requests
+    from bs4 import BeautifulSoup
+
+    url = (f'https://www.procyclingstats.com/{PCS_RACE_PATH}'
+           f'/stage-{stage_num}/result/result')
+
+    try:
+        resp = requests.get(url, headers=PCS_HEADERS, timeout=12,
+                            verify=False, allow_redirects=True)
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        code = e.response.status_code if e.response is not None else '?'
+        return None, f'HTTP {code} bij ophalen van {url}'
+    except requests.exceptions.RequestException as e:
+        return None, str(e)
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    results_table = soup.select_one('table.results')
+    if not results_table:
+        return None, 'Geen resultaten-tabel gevonden op PCS. Zijn de uitslag al gepubliceerd?'
+
+    headers_row = [th.text.strip() for th in results_table.find_all('th')]
+    all_riders = Rider.query.order_by(Rider.name).all()
+    r_index = build_rider_index(all_riders)
+
+    results = []
+    for tr in results_table.select('tbody tr'):
+        cols = tr.find_all('td')
+        if len(cols) != len(headers_row):
+            continue
+        row = {}
+        for i, td in enumerate(cols):
+            h = headers_row[i]
+            if h == 'Rider':
+                links = td.find_all('a')
+                row['pcs_name'] = (' '.join(links[0].stripped_strings)
+                                   if links else td.get_text(' ', strip=True))
+            elif h == 'Rnk':
+                row['rnk'] = td.get_text(strip=True)
+
+        rnk = row.get('rnk', '')
+        if not re.match(r'^\d+$', rnk):
+            continue  # skip DNF/OTL/DNS rows
+        pos = int(rnk)
+        if pos > 15:
+            break
+
+        pcs_name = row.get('pcs_name', '')
+        rid, score, auto = match_rider_name(pcs_name, r_index)
+        results.append({
+            'pos': pos,
+            'pcs_name': pcs_name,
+            'rider_id': rid,
+            'match_score': score,
+            'auto': auto,
+        })
+
+    if not results:
+        return None, 'Geen geldige posities gevonden in de tabel.'
+
+    return results, None
 
 
 def _parse_names_from_pcs_html(html_or_text):
@@ -950,12 +1079,48 @@ def _parse_names_from_pcs_html(html_or_text):
     return riders
 
 
+def _diff_startlist(riders_found):
+    """Compare scraped riders against DB. Returns (scraped_list, to_remove_list)."""
+    scraped_names = {r['name'] for r in riders_found}
+    all_db = Rider.query.order_by(Rider.name).all()
+    existing_map = {r.name: r for r in all_db}
+
+    scraped = []
+    for r in riders_found:
+        db_rider = existing_map.get(r['name'])
+        team_changed = db_rider and db_rider.team != r['team']
+        scraped.append({
+            'name': r['name'],
+            'team': r['team'],
+            'new': db_rider is None,
+            'team_changed': team_changed,
+            'old_team': db_rider.team if db_rider else None,
+        })
+
+    to_remove = []
+    for r in all_db:
+        if r.name not in scraped_names:
+            geel_count = Selection.query.filter_by(rider_id=r.id, type='geel').count()
+            rood_count = RoodEntry.query.filter_by(matched_rider_id=r.id).count()
+            to_remove.append({
+                'id': r.id,
+                'name': r.name,
+                'team': r.team,
+                'geel_count': geel_count,
+                'rood_count': rood_count,
+                'has_selections': bool(geel_count or rood_count),
+            })
+
+    return scraped, to_remove
+
+
 @app.route('/admin/scrape-startlist', methods=['GET', 'POST'])
 @require_admin
 def admin_scrape_startlist():
     import requests
 
     scraped = None
+    to_remove = []
     error = None
     show_paste = False
 
@@ -991,9 +1156,7 @@ def admin_scrape_startlist():
                     error = 'Geen renners gevonden. De startlijst is mogelijk nog niet gepubliceerd.'
                     show_paste = True
                 else:
-                    existing = {r.name for r in Rider.query.all()}
-                    scraped = [{'name': r['name'], 'team': r['team'], 'new': r['name'] not in existing}
-                               for r in riders_found]
+                    scraped, to_remove = _diff_startlist(riders_found)
 
             except requests.exceptions.HTTPError as e:
                 if e.response is not None and e.response.status_code == 403:
@@ -1018,30 +1181,64 @@ def admin_scrape_startlist():
                              'in het formaat ACHTERNAAM Voornaam, of één naam per regel.')
                     show_paste = True
                 else:
-                    existing = {r.name for r in Rider.query.all()}
-                    scraped = [{'name': r['name'], 'team': r['team'], 'new': r['name'] not in existing}
-                               for r in riders_found]
+                    scraped, to_remove = _diff_startlist(riders_found)
 
         elif action == 'import':
             names = request.form.getlist('import_names')
             teams = request.form.getlist('import_teams')
-            # teams list is parallel to names list; pad if missing
+            remove_ids = [int(x) for x in request.form.getlist('remove_ids')]
             while len(teams) < len(names):
                 teams.append('')
-            added = 0
+
+            added = updated = removed = affected_geel = affected_rood = 0
+
             for name, team in zip(names, teams):
                 name = name.strip()
                 team = team.strip() or None
-                if name and not Rider.query.filter_by(name=name).first():
+                existing = Rider.query.filter_by(name=name).first()
+                if existing:
+                    if existing.team != team:
+                        existing.team = team
+                        updated += 1
+                elif name:
                     db.session.add(Rider(name=name, team=team))
                     added += 1
+
+            for rid in remove_ids:
+                r = Rider.query.get(rid)
+                if not r:
+                    continue
+                geel = Selection.query.filter_by(rider_id=rid, type='geel').count()
+                rood = RoodEntry.query.filter_by(matched_rider_id=rid).count()
+                affected_geel += geel
+                affected_rood += rood
+                # Unlink rood entries, delete geel selections, then delete rider
+                RoodEntry.query.filter_by(matched_rider_id=rid).update(
+                    {'matched_rider_id': None})
+                Selection.query.filter_by(rider_id=rid, type='geel').delete()
+                db.session.delete(r)
+                removed += 1
+
             db.session.commit()
-            flash(f'{added} renners geïmporteerd.', 'success')
+
+            parts = []
+            if added:
+                parts.append(f'{added} toegevoegd')
+            if updated:
+                parts.append(f'{updated} team bijgewerkt')
+            if removed:
+                parts.append(f'{removed} verwijderd')
+            flash('Startlijst gesynchroniseerd: ' + ', '.join(parts) + '.', 'success')
+            if affected_geel or affected_rood:
+                flash(
+                    f'Let op: {affected_geel} geel-selectie(s) en {affected_rood} rood-koppeling(en) '
+                    f'verwijderd door het weghalen van renners. Controleer de betrokken deelnemers.',
+                    'warning')
             return redirect(url_for('admin_renners'))
 
     return render_template('admin/scrape_startlist.html',
-                           scraped=scraped, error=error,
-                           show_paste=show_paste,
+                           scraped=scraped, to_remove=to_remove,
+                           error=error, show_paste=show_paste,
                            url=PCS_STARTLIST_URL)
 
 

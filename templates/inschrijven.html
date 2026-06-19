@@ -65,6 +65,19 @@
 <form method="post" id="inschrijf-form">
 <div class="px-6 lg:px-10 py-8 space-y-6">
 
+  <!-- ── Draft hersteld banner ── -->
+  <div id="draft-banner" class="hidden bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+    <i class="bi bi-floppy2-fill text-blue-500 mt-0.5 flex-shrink-0"></i>
+    <div class="flex-1 text-sm text-blue-800">
+      <strong>Je eerdere inschrijving is hersteld.</strong>
+      Ga verder waar je gebleven was, of
+      <button type="button" onclick="clearDraft(true)"
+              class="underline font-semibold hover:text-blue-600">begin opnieuw</button>.
+    </div>
+    <button type="button" onclick="document.getElementById('draft-banner').classList.add('hidden')"
+            class="text-blue-400 hover:text-blue-600 text-lg leading-none flex-shrink-0">✕</button>
+  </div>
+
   <!-- ── Stap 1: Persoonlijke gegevens ── -->
   <div id="step-1" class="step-content">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -601,6 +614,93 @@ function updateOverview() {
     }
   }
 }
+
+// ── Draft opslaan / herstellen (localStorage) ────────────────────────────────
+const DRAFT_KEY = 'tourpoule_2026_draft';
+
+function saveDraft() {
+  const draft = {
+    naam:     document.getElementById('inp-naam')?.value || '',
+    afdeling: document.getElementById('inp-afdeling')?.value || '',
+    geel: [...document.querySelectorAll('.geel-pub-cb:checked')].map(cb => cb.value),
+    rood: [...document.querySelectorAll('.rood-pub-cb:checked')].map(cb => cb.value),
+    bonus: {},
+  };
+  document.querySelectorAll('[name^="bonus_"]').forEach(inp => {
+    draft.bonus[inp.name] = inp.value;
+  });
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(e) {}
+}
+
+function restoreDraft() {
+  let raw;
+  try { raw = localStorage.getItem(DRAFT_KEY); } catch(e) { return; }
+  if (!raw) return;
+  let draft;
+  try { draft = JSON.parse(raw); } catch(e) { return; }
+
+  let restored = false;
+
+  if (draft.naam) {
+    document.getElementById('inp-naam').value = draft.naam;
+    restored = true;
+  }
+  if (draft.afdeling) {
+    document.getElementById('inp-afdeling').value = draft.afdeling;
+    restored = true;
+  }
+  if (draft.geel?.length) {
+    draft.geel.forEach(id => {
+      const cb = document.querySelector(`.geel-pub-cb[value="${id}"]`);
+      if (cb) cb.checked = true;
+    });
+    updateCounter('geel-pub-cb', 'geel-counter', MAX_GEEL);
+    syncCrossTeam('geel-pub-cb');
+    restored = true;
+  }
+  if (draft.rood?.length) {
+    draft.rood.forEach(id => {
+      const cb = document.querySelector(`.rood-pub-cb[value="${id}"]`);
+      if (cb && !cb.disabled) cb.checked = true;
+    });
+    updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+    syncCrossTeam('rood-pub-cb');
+    restored = true;
+  }
+  if (draft.bonus) {
+    Object.entries(draft.bonus).forEach(([name, val]) => {
+      const inp = document.querySelector(`[name="${name}"]`);
+      if (inp && val) { inp.value = val; restored = true; }
+    });
+  }
+
+  if (restored) {
+    document.getElementById('draft-banner').classList.remove('hidden');
+  }
+}
+
+function clearDraft(reload) {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+  if (reload) location.reload();
+}
+
+// Autosave bij elke wijziging
+document.getElementById('inp-naam')?.addEventListener('input', saveDraft);
+document.getElementById('inp-afdeling')?.addEventListener('input', saveDraft);
+document.querySelectorAll('.geel-pub-cb, .rood-pub-cb').forEach(cb => {
+  cb.addEventListener('change', saveDraft);
+});
+document.querySelectorAll('[name^="bonus_"]').forEach(inp => {
+  inp.addEventListener('input', saveDraft);
+});
+
+// Draft wissen bij definitieve inschrijving
+document.getElementById('inschrijf-form')?.addEventListener('submit', () => {
+  clearDraft(false);
+});
+
+// Herstel bij laden
+restoreDraft();
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
 const deadline = new Date('2026-07-03T17:00:00');

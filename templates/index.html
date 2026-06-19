@@ -3,17 +3,21 @@
 
 {% block content %}
 <!-- Hero -->
-<div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-12 mb-8">
-  <div class="w-full px-6 lg:px-10">
-    <h1 class="text-4xl font-extrabold text-tdf-yellow">🚴 KNLTB Tourpoule 2026</h1>
-    <p class="text-gray-400 mt-2 text-lg">Tour de France 2026 — Kies je 15 renners en strijd om de zege!</p>
+<div class="relative border-b-4 border-tdf-yellow mb-8 overflow-hidden" style="min-height:220px">
+  <img src="{{ url_for('static', filename='tour-de-france-nlziet.jpg') }}"
+       alt="Tour de France 2026"
+       class="absolute inset-0 w-full h-full object-cover object-center">
+  <div class="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/75 to-zinc-950/40"></div>
+  <div class="relative w-full px-6 lg:px-10 py-14">
+    <h1 class="text-4xl font-extrabold text-tdf-yellow drop-shadow-lg">🚴 KNLTB Tourpoule 2026</h1>
+    <p class="text-gray-200 mt-2 text-lg drop-shadow">Tour de France 2026 — Kies je 20 renners en strijd om de zege!</p>
     <div class="mt-4">
       {% if stages_done > 0 %}
         <span class="inline-block bg-tdf-yellow text-zinc-900 font-bold px-4 py-1.5 rounded-full text-sm">
           Etappe {{ stages_done }} / 21 gereden
         </span>
       {% else %}
-        <span class="inline-block bg-zinc-700 text-gray-300 px-4 py-1.5 rounded-full text-sm">
+        <span class="inline-block bg-zinc-700/80 text-gray-300 px-4 py-1.5 rounded-full text-sm">
           Nog geen etappes ingevoerd
         </span>
       {% endif %}
@@ -114,7 +118,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
       <div class="p-5">
         <h3 class="font-bold text-gray-900 mb-2">🟡 Geel Klassement</h3>
-        <p class="text-sm text-gray-500">Kies 15 renners. Verzamel zo <strong class="text-gray-700">veel mogelijk</strong> punten via etappeplaatsen, truidragers en eindklassementen.</p>
+        <p class="text-sm text-gray-500">Kies 20 renners. Verzamel zo <strong class="text-gray-700">veel mogelijk</strong> punten via etappeplaatsen, truidragers en eindklassementen.</p>
       </div>
       <div class="p-5">
         <h3 class="font-bold text-gray-900 mb-2">🔴 Rode Lantaarn</h3>

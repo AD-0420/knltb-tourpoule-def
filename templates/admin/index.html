@@ -111,9 +111,13 @@
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div class="px-5 py-3 bg-zinc-800 font-semibold text-white">🏁 Resultaten</div>
       <div class="p-4 space-y-2">
+        <a href="{{ url_for('admin_scrape_etappe') }}"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-tdf-yellow/40 text-amber-700 hover:bg-yellow-50 hover:border-tdf-yellow transition-colors text-sm font-medium">
+          <i class="bi bi-cloud-download text-amber-500"></i> Etappe scrapen via PCS
+        </a>
         <a href="{{ url_for('admin_etappe') }}"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
-          <i class="bi bi-flag text-gray-400"></i> Etapperesultaten invoeren
+          <i class="bi bi-flag text-gray-400"></i> Etapperesultaten handmatig
         </a>
         <a href="{{ url_for('admin_eindklassement') }}"
            class="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-slate-50 hover:border-gray-300 transition-colors text-sm font-medium">
