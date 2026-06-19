@@ -7,7 +7,7 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div>
         <h1 class="text-3xl font-extrabold text-tdf-yellow">🚴 Inschrijven Tourpoule 2026</h1>
-        <p class="text-gray-400 mt-1">Tour de France 2026 · Kies je 15 renners en strijd om de zege!</p>
+        <p class="text-gray-400 mt-1">Tour de France 2026 · Kies je {{ max_geel }} renners en strijd om de zege!</p>
       </div>
       <div class="text-right">
         {% if gesloten %}
@@ -112,7 +112,7 @@
               <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <h3 class="font-bold text-gray-900 mb-2">🟡 Geel Klassement</h3>
                 <ul class="space-y-1 text-xs text-gray-600">
-                  <li>• Kies <strong>15 renners</strong> uit de startlijst</li>
+                  <li>• Kies <strong>{{ max_geel }} renners</strong> uit de startlijst</li>
                   <li>• Verzamel zo <strong>veel mogelijk</strong> punten</li>
                   <li>• Punten via etappeplaatsen, truidragers en eindklassementen</li>
                   <li>• Bonusvragen leveren extra punten op</li>
@@ -121,7 +121,7 @@
               <div class="bg-red-50 border border-red-200 rounded-xl p-4">
                 <h3 class="font-bold text-gray-900 mb-2">🔴 Rode Lantaarn <span class="text-xs font-normal text-gray-500">(optioneel)</span></h3>
                 <ul class="space-y-1 text-xs text-gray-600">
-                  <li>• Kies een <strong>apart team van 15 renners</strong></li>
+                  <li>• Kies een <strong>apart team van {{ max_rood }} renners</strong></li>
                   <li>• Verzamel zo <strong>weinig mogelijk</strong> punten</li>
                   <li>• Kies domestiques, uitvallers of ploegrijders</li>
                   <li>• Bonusvragen tellen <em>niet</em> mee</li>
@@ -179,8 +179,8 @@
   <div id="step-2" class="step-content hidden">
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-5 py-3 bg-tdf-yellow">
-        <span class="font-bold text-zinc-900">🟡 Kies je Geel team – precies 15 renners</span>
-        <span id="geel-counter" class="text-sm font-bold bg-zinc-900 text-tdf-yellow px-3 py-1 rounded-full">0 / 15</span>
+        <span class="font-bold text-zinc-900">🟡 Kies je Geel team – precies {{ max_geel }} renners</span>
+        <span id="geel-counter" class="text-sm font-bold bg-zinc-900 text-tdf-yellow px-3 py-1 rounded-full">0 / {{ max_geel }}</span>
       </div>
       <div class="p-4">
         <div class="flex items-center gap-2 mb-3 border border-gray-200 rounded-xl px-3 py-2">
@@ -237,27 +237,48 @@
   <div id="step-3" class="step-content hidden">
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-5 py-3 bg-red-600">
-        <span class="font-bold text-white">🔴 Rood team – optioneel, 0 of precies 15 renners</span>
-        <span id="rood-counter" class="text-sm font-bold bg-white text-red-600 px-3 py-1 rounded-full">0 / 15</span>
+        <span class="font-bold text-white">🔴 Kies je Rood team – optioneel, 0 of precies {{ max_rood }} renners</span>
+        <span id="rood-counter" class="text-sm font-bold bg-white text-red-600 px-3 py-1 rounded-full">0 / {{ max_rood }}</span>
       </div>
-      <div class="p-4 space-y-3">
-        <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
-          <strong>Optioneel:</strong> doe je niet mee? Klik dan op "Geen rood team".
-          Je mag <strong>elke renner</strong> invullen — ook renners die (nog) niet op de startlijst staan.
-          Typ gewoon de naam, de beheerder koppelt ze later aan de officiële startlijst.
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3 border border-gray-200 rounded-xl px-3 py-2">
+          <i class="bi bi-search text-gray-400"></i>
+          <input type="text" id="search-rood-pub" placeholder="Zoek renner op naam of team…"
+                 class="flex-1 text-sm focus:outline-none bg-transparent">
+          <button type="button" onclick="clearRoodSearch()"
+                  class="text-xs text-gray-400 hover:text-gray-600">✕</button>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
-          {% for i in range(1, 16) %}
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 w-5 text-right flex-shrink-0 font-mono">{{ i }}</span>
-            <input type="text" name="rood_name_{{ i }}"
-                   class="rood-text-input w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-                          focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
-                   placeholder="Naam renner…"
-                   autocomplete="off">
-          </div>
-          {% endfor %}
+        <div id="grid-rood-pub" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+          {% if riders_by_team %}
+            {% for team_name, team_riders in riders_by_team.items() %}
+            <div class="team-group-rood" data-team="{{ team_name }}">
+              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 py-1 sticky top-0 bg-white z-10 border-b border-gray-100 mb-1">
+                {{ team_name }}
+              </div>
+              <div class="rider-grid">
+                {% for r in team_riders %}
+                <label id="lbl-rood-{{ r.id }}" data-name="{{ r.name|lower }}" data-team="{{ (r.team or '')|lower }}"
+                       class="rood-label">
+                  <input type="checkbox" name="rood_riders" value="{{ r.id }}" class="rood-pub-cb">
+                  <span>{{ r.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="rider-grid">
+              {% for r in riders %}
+              <label id="lbl-rood-{{ r.id }}" data-name="{{ r.name|lower }}" data-team=""
+                     class="rood-label">
+                <input type="checkbox" name="rood_riders" value="{{ r.id }}" class="rood-pub-cb">
+                <span>{{ r.name }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          {% endif %}
         </div>
+        <p class="text-xs text-gray-400 mt-2">💡 Tip: een renner kan niet in zowel geel als rood team zitten.</p>
       </div>
     </div>
     <div class="flex gap-3 mt-4">
@@ -352,7 +373,7 @@
             </li>
             <li class="flex items-start gap-2">
               <span class="text-green-500 mt-0.5">✓</span>
-              Zorg dat je precies 15 renners hebt gekozen voor je geel team
+              Zorg dat je precies {{ max_geel }} renners hebt gekozen voor je geel team
             </li>
             <li class="flex items-start gap-2">
               <span class="text-amber-500 mt-0.5">€</span>
@@ -432,9 +453,9 @@ function nextStep(from) {
     }
   }
   if (from === 3) {
-    const n = [...document.querySelectorAll('.rood-text-input')].filter(i => i.value.trim()).length;
+    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
     if (n > 0 && n !== MAX_ROOD) {
-      alert(`Vul precies ${MAX_ROOD} namen in voor je rood team, of laat alles leeg (nu: ${n}).`);
+      alert(`Kies precies ${MAX_ROOD} renners voor je rood team, of laat alles leeg (nu: ${n}).`);
       return;
     }
   }
@@ -453,33 +474,47 @@ function updateCounter(cls, elId, max) {
   else                el.classList.add('bg-zinc-900','text-tdf-yellow');
 }
 
+// ── Cross-team sync: disable rider in other team when selected ────────────────
+function syncCrossTeam(changedClass) {
+  const otherClass = changedClass === 'geel-pub-cb' ? 'rood-pub-cb' : 'geel-pub-cb';
+  const selected = new Set(
+    [...document.querySelectorAll(`.${changedClass}:checked`)].map(cb => cb.value)
+  );
+  document.querySelectorAll(`.${otherClass}`).forEach(cb => {
+    const lbl = cb.closest('label');
+    if (selected.has(cb.value)) {
+      cb.checked = false;
+      cb.disabled = true;
+      if (lbl) lbl.style.opacity = '0.35';
+    } else {
+      cb.disabled = false;
+      if (lbl) lbl.style.opacity = '';
+    }
+  });
+}
+
 document.querySelectorAll('.geel-pub-cb').forEach(cb => {
   cb.addEventListener('change', () => {
     const n = document.querySelectorAll('.geel-pub-cb:checked').length;
     if (n > MAX_GEEL) { cb.checked = false; }
     updateCounter('geel-pub-cb', 'geel-counter', MAX_GEEL);
+    syncCrossTeam('geel-pub-cb');
   });
 });
 
-// Rood: count non-empty text inputs
-function updateRoodCounter() {
-  const n = [...document.querySelectorAll('.rood-text-input')].filter(i => i.value.trim()).length;
-  const el = document.getElementById('rood-counter');
-  if (!el) return;
-  el.textContent = `${n} / ${MAX_ROOD}`;
-  el.className = el.className.replace(/bg-\S+|text-\S+(?=\s|$)/g, '').trim();
-  if (n === MAX_ROOD)    el.classList.add('bg-green-600', 'text-white');
-  else if (n > MAX_ROOD) el.classList.add('bg-red-800', 'text-white');
-  else if (n > 0)        el.classList.add('bg-white', 'text-orange-600');
-  else                   el.classList.add('bg-white', 'text-red-600');
-}
-document.querySelectorAll('.rood-text-input').forEach(inp => {
-  inp.addEventListener('input', updateRoodCounter);
+document.querySelectorAll('.rood-pub-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const n = document.querySelectorAll('.rood-pub-cb:checked').length;
+    if (n > MAX_ROOD) { cb.checked = false; }
+    updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+    syncCrossTeam('rood-pub-cb');
+  });
 });
 
 function clearRood() {
-  document.querySelectorAll('.rood-text-input').forEach(i => i.value = '');
-  updateRoodCounter();
+  document.querySelectorAll('.rood-pub-cb').forEach(cb => { cb.checked = false; });
+  updateCounter('rood-pub-cb', 'rood-counter', MAX_ROOD);
+  syncCrossTeam('rood-pub-cb');
   goToStep(HAS_BONUS ? 4 : 4);
 }
 
@@ -509,6 +544,31 @@ function clearGeelSearch() {
   });
 }
 
+// ── Rood search ───────────────────────────────────────────────────────────────
+document.getElementById('search-rood-pub').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  document.querySelectorAll('#grid-rood-pub .team-group-rood').forEach(group => {
+    let anyVisible = false;
+    group.querySelectorAll('label').forEach(lbl => {
+      const match = !q
+        || lbl.dataset.name.includes(q)
+        || lbl.dataset.team.includes(q);
+      lbl.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    group.style.display = anyVisible ? '' : 'none';
+  });
+  document.querySelectorAll('#grid-rood-pub > .rider-grid label').forEach(lbl => {
+    lbl.style.display = (!q || lbl.dataset.name.includes(q)) ? '' : 'none';
+  });
+});
+function clearRoodSearch() {
+  document.getElementById('search-rood-pub').value = '';
+  document.querySelectorAll('#grid-rood-pub .team-group-rood, #grid-rood-pub label').forEach(el => {
+    el.style.display = '';
+  });
+}
+
 // ── Overzicht ─────────────────────────────────────────────────────────────────
 function updateOverview() {
   document.getElementById('overzicht-naam').textContent = document.getElementById('inp-naam').value || '—';
@@ -519,15 +579,14 @@ function updateOverview() {
   document.getElementById('overzicht-geel').innerHTML =
     geelCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
 
-  const roodVals = [...document.querySelectorAll('.rood-text-input')]
-    .map(i => i.value.trim()).filter(Boolean);
-  document.getElementById('ov-rood-count').textContent = roodVals.length;
+  const roodCbs = [...document.querySelectorAll('.rood-pub-cb:checked')];
+  document.getElementById('ov-rood-count').textContent = roodCbs.length;
   const roodSec = document.getElementById('ov-rood-section');
-  if (roodVals.length === 0) {
+  if (roodCbs.length === 0) {
     roodSec.innerHTML = '<div class="p-4 text-xs text-gray-400 italic">Geen rood team ingeschreven.</div>';
   } else {
     document.getElementById('overzicht-rood').innerHTML =
-      roodVals.map(n => `<div>• ${n}</div>`).join('');
+      roodCbs.map(cb => `<div>• ${cb.closest('label').querySelector('span').textContent}</div>`).join('');
   }
 
   if (HAS_BONUS) {

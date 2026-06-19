@@ -42,7 +42,7 @@ JERSEY_LABELS = {'yellow': 'Gele trui', 'green': 'Groene trui',
                  'polka': 'Bolletjestrui', 'white': 'Witte trui'}
 JERSEY_CLASSES = {'yellow': 'jersey-yellow', 'green': 'jersey-green',
                   'polka': 'jersey-polka', 'white': 'jersey-white'}
-MAX_GEEL = 15
+MAX_GEEL = 20
 MAX_ROOD = 15
 INSCHRIJF_DEADLINE = datetime(2026, 7, 3, 17, 0, 0)
 INSCHRIJFGELD = '€5,-'
@@ -373,9 +373,7 @@ def inschrijven():
         naam = request.form.get('naam', '').strip()
         afdeling = request.form.get('afdeling', '').strip()
         geel_ids = [int(x) for x in request.form.getlist('geel_riders')]
-        rood_names = [request.form.get(f'rood_name_{i}', '').strip()
-                      for i in range(1, 16)]
-        rood_names = [n for n in rood_names if n]
+        rood_ids = [int(x) for x in request.form.getlist('rood_riders')]
 
         # Validatie
         errors = []
@@ -383,10 +381,10 @@ def inschrijven():
             errors.append('Voer je naam in.')
         if not afdeling:
             errors.append('Voer je afdeling in.')
-        if len(geel_ids) != 15:
-            errors.append(f'Kies precies 15 renners voor je geel team (nu {len(geel_ids)}).')
-        if rood_names and len(rood_names) != 15:
-            errors.append(f'Vul precies 15 renners in voor je rood team of laat alles leeg (nu {len(rood_names)}).')
+        if len(geel_ids) != MAX_GEEL:
+            errors.append(f'Kies precies {MAX_GEEL} renners voor je geel team (nu {len(geel_ids)}).')
+        if rood_ids and len(rood_ids) != MAX_ROOD:
+            errors.append(f'Kies precies {MAX_ROOD} renners voor je rood team of laat alles leeg (nu {len(rood_ids)}).')
 
         if errors:
             for e in errors:
@@ -414,19 +412,18 @@ def inschrijven():
         for rid in geel_ids:
             db.session.add(Selection(participant_id=p.id, rider_id=rid, type='geel'))
 
-        # Rood: free text, try to auto-match to startlist
-        if rood_names:
-            all_riders = Rider.query.order_by(Rider.name).all()
-            r_index = build_rider_index(all_riders)
-            for pos, raw_name in enumerate(rood_names, 1):
-                rid, score, auto = match_rider_name(raw_name, r_index)
-                matched_id = rid if auto else None
-                db.session.add(RoodEntry(
-                    participant_id=p.id,
-                    custom_name=raw_name,
-                    matched_rider_id=matched_id,
-                    position=pos,
-                ))
+        # Rood: geselecteerde renners vanuit de startlijst
+        if rood_ids:
+            riders_map = {r.id: r for r in Rider.query.filter(Rider.id.in_(rood_ids)).all()}
+            for pos, rid in enumerate(rood_ids, 1):
+                r = riders_map.get(rid)
+                if r:
+                    db.session.add(RoodEntry(
+                        participant_id=p.id,
+                        custom_name=r.name,
+                        matched_rider_id=r.id,
+                        position=pos,
+                    ))
 
         for q in questions:
             answer_text = request.form.get(f'bonus_{q.id}', '').strip()
