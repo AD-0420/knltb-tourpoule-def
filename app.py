@@ -1123,28 +1123,42 @@ def _parse_names_from_pcs_html(html_or_text):
                 continue
 
             # Strip leading hyphen/dash (PCS plain-text paste: "- LASTNAME Firstname")
-            if line.startswith('-'):
-                line = line.lstrip('-').strip()
+            if line.startswith(‘-’):
+                line = line.lstrip(‘-’).strip()
+
+            # Skip directeur sportif / staff lines (DS LASTNAME Firstname)
+            if re.match(r’^DS\s+[A-Z]’, line):
+                continue
+
+            # Strip trailing PCS timestamp like "20h", "3d", "1m" (often glued to last word or
+            # separated by whitespace depending on browser/OS copy behaviour)
+            line = re.sub(r’\s+\d+[hmd]\b.*$’, ‘’, line).strip()
 
             # Strip leading bib number
-            line = re.sub(r'^\d+\s+', '', line).strip()
+            line = re.sub(r’^\d+\s+’, ‘’, line).strip()
             if not line:
                 continue
 
             parts = line.split()
             if len(parts) < 2 or len(parts) > 8:
-                # Single-word or very long lines → skip, but don't use as team name
+                # Single-word or very long lines → skip, but don’t use as team name
                 continue
 
             # Lastname = leading all-caps tokens, firstname = rest
             lastname_parts, firstname_parts, in_last = [], [], True
             for p in parts:
-                clean = p.replace('-', '').replace("'", '').replace('’', '')
+                # Strip trailing time suffixes that may be glued to a token ("Søren20h" → "Søren")
+                p = re.sub(r’\d+[hmd]$’, ‘’, p)
+                if not p:
+                    continue
+                clean = p.replace(‘-’, ‘’).replace("’", ‘’).replace(‘’’, ‘’)
                 if in_last and clean.isalpha() and clean == clean.upper() and len(clean) >= 2:
                     lastname_parts.append(p)
                 else:
                     in_last = False
-                    firstname_parts.append(p)
+                    # Skip pure-digit leftover tokens in the firstname position
+                    if not re.fullmatch(r’\d+’, p):
+                        firstname_parts.append(p)
 
             if lastname_parts and firstname_parts:
                 # Skip team abbreviations like "UAE Team Emirates" (single ≤3-char token)
@@ -1152,9 +1166,9 @@ def _parse_names_from_pcs_html(html_or_text):
                     # Treat remainder as team name
                     current_team = line
                     continue
-                name = ' '.join(lastname_parts) + ' ' + ' '.join(firstname_parts)
+                name = ‘ ‘.join(lastname_parts) + ‘ ‘ + ‘ ‘.join(firstname_parts)
                 if name not in seen and len(name) < 60:
-                    riders.append({'name': name, 'team': current_team})
+                    riders.append({‘name’: name, ‘team’: current_team})
                     seen.add(name)
             else:
                 # No rider pattern → treat as team name for subsequent lines

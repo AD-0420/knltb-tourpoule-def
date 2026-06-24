@@ -161,5 +161,74 @@
       {% endif %}
     </div>
   </div>
+
+  {% if stage_points %}
+  <!-- Puntenverloop chart -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden mt-6">
+    <div class="px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow">📈 Puntenverloop per etappe</span>
+    </div>
+    <div class="p-5">
+      <canvas id="stageChart" height="100"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if stage_points %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+const stageData = {{ stage_points | tojson }};
+new Chart(document.getElementById('stageChart'), {
+  type: 'line',
+  data: {
+    labels: stageData.map(d => 'E' + d.stage),
+    datasets: [{
+      label: 'Cumulatieve punten',
+      data: stageData.map(d => d.cumul),
+      borderColor: '#FFD700',
+      backgroundColor: 'rgba(255,215,0,0.12)',
+      borderWidth: 2.5,
+      pointRadius: 4,
+      pointBackgroundColor: '#FFD700',
+      fill: true,
+      tension: 0.3,
+    }, {
+      label: 'Punten deze etappe',
+      data: stageData.map(d => d.pts),
+      borderColor: '#6b7280',
+      backgroundColor: 'rgba(107,114,128,0.08)',
+      borderWidth: 1.5,
+      pointRadius: 3,
+      pointBackgroundColor: '#6b7280',
+      fill: false,
+      tension: 0.3,
+      borderDash: [4, 3],
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          title: ctx => 'Etappe ' + stageData[ctx[0].dataIndex].stage,
+          afterBody: ctx => {
+            const d = stageData[ctx[0].dataIndex];
+            return `Deze etappe: ${d.pts} pts  |  Totaal: ${d.cumul} pts`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, ticks: { precision: 0 } }
+    }
+  }
+});
+</script>
+{% endif %}
 {% endblock %}
