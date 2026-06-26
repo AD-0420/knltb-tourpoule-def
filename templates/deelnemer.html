@@ -27,6 +27,19 @@
 </div>
 
 <div class="w-full px-6 lg:px-10 pb-12">
+
+  {% if not teams_visible %}
+  <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 text-center mb-6">
+    <div class="text-4xl mb-3">🔒</div>
+    <h2 class="text-xl font-bold text-tdf-yellow mb-2">Teams zijn nog niet zichtbaar</h2>
+    <p class="text-gray-400 text-sm">
+      De selecties worden zichtbaar na de inschrijfdeadline:<br>
+      <strong class="text-gray-200">zaterdag 4 juli 2026 om 12:00</strong>
+    </p>
+    <p class="text-gray-500 text-xs mt-3">Zo kan niemand elkaars keuzes afkijken voor de start van de Tour.</p>
+  </div>
+  {% else %}
+
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
     <!-- Geel team -->
@@ -173,6 +186,8 @@
     </div>
   </div>
   {% endif %}
+
+  {% endif %}{# end teams_visible #}
 
 </div>
 {% endblock %}

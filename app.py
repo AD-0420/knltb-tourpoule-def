@@ -242,12 +242,14 @@ def deelnemer(pid):
 
     all_participants = Participant.query.order_by(Participant.name).all()
     stage_points = get_participant_stage_points(pid)
+    teams_visible = datetime.now() >= INSCHRIJF_DEADLINE
 
     return render_template('deelnemer.html', p=p, geel_team=geel_team,
                            rood_team=rood_team, geel_total=geel_total,
                            rood_total=rood_total, questions=questions,
                            answers=answers, participants=all_participants,
-                           stage_points=stage_points)
+                           stage_points=stage_points,
+                           teams_visible=teams_visible)
 
 
 @app.route('/etappes')
