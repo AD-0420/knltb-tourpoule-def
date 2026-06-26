@@ -3,6 +3,7 @@ import io
 import json
 import os
 import unicodedata
+import uuid
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from functools import wraps
@@ -27,12 +28,23 @@ with app.app_context():
         for ddl in [
             "ALTER TABLE rider ADD COLUMN niet_gestart BOOLEAN DEFAULT 0",
             "ALTER TABLE rider ADD COLUMN team VARCHAR(150)",
+            "ALTER TABLE participant ADD COLUMN edit_token VARCHAR(36)",
         ]:
             try:
                 _conn.execute(db.text(ddl))
                 _conn.commit()
             except Exception:
                 pass
+        # Generate edit tokens for any participants that don't have one yet
+        rows = _conn.execute(db.text(
+            "SELECT id FROM participant WHERE edit_token IS NULL"
+        )).fetchall()
+        for row in rows:
+            _conn.execute(db.text(
+                "UPDATE participant SET edit_token = :tok WHERE id = :id"
+            ), {"tok": str(uuid.uuid4()), "id": row[0]})
+        if rows:
+            _conn.commit()
 
 POINTS_TABLE = {1: 35, 2: 25, 3: 20, 4: 18, 5: 16, 6: 14, 7: 12,
                 8: 10, 9: 8, 10: 6, 11: 5, 12: 4, 13: 3, 14: 2, 15: 1}
@@ -455,7 +467,7 @@ def inschrijven():
                 db.session.flush()
             cluster_id = c.id
 
-        p = Participant(name=naam, cluster_id=cluster_id)
+        p = Participant(name=naam, cluster_id=cluster_id, edit_token=str(uuid.uuid4()))
         db.session.add(p)
         db.session.flush()
 
@@ -503,6 +515,97 @@ def inschrijven_bevestiging():
     naam = request.args.get('naam', 'Deelnemer')
     p = Participant.query.filter_by(name=naam).first()
     return render_template('inschrijven_bevestiging.html', naam=naam, p=p)
+
+
+@app.route('/mijn-team/<token>', methods=['GET', 'POST'])
+def mijn_team(token):
+    p = Participant.query.filter_by(edit_token=token).first_or_404()
+    riders = Rider.query.order_by(Rider.name).all()
+    questions = BonusQuestion.query.order_by(BonusQuestion.number).all()
+    now = datetime.now()
+    gesloten = now > INSCHRIJF_DEADLINE
+
+    if request.method == 'POST':
+        if gesloten:
+            flash('De wijzigingstermijn is gesloten.', 'danger')
+            return redirect(url_for('mijn_team', token=token))
+
+        afdeling = request.form.get('afdeling', '').strip()
+        geel_ids = [int(x) for x in request.form.getlist('geel_riders')]
+        rood_ids = [int(x) for x in request.form.getlist('rood_riders')]
+
+        errors = []
+        if len(geel_ids) != MAX_GEEL:
+            errors.append(f'Kies precies {MAX_GEEL} renners voor je geel team (nu {len(geel_ids)}).')
+        if rood_ids and len(rood_ids) != MAX_ROOD:
+            errors.append(f'Kies precies {MAX_ROOD} renners voor je rood team of laat alles leeg (nu {len(rood_ids)}).')
+
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return redirect(url_for('mijn_team', token=token))
+
+        # Update afdeling/cluster
+        if afdeling:
+            c = Cluster.query.filter_by(name=afdeling).first()
+            if not c:
+                c = Cluster(name=afdeling)
+                db.session.add(c)
+                db.session.flush()
+            p.cluster_id = c.id
+
+        # Replace geel selections
+        Selection.query.filter_by(participant_id=p.id, type='geel').delete()
+        for rid in geel_ids:
+            db.session.add(Selection(participant_id=p.id, rider_id=rid, type='geel'))
+
+        # Replace rood entries
+        RoodEntry.query.filter_by(participant_id=p.id).delete()
+        if rood_ids:
+            riders_map = {r.id: r for r in Rider.query.filter(Rider.id.in_(rood_ids)).all()}
+            for pos, rid in enumerate(rood_ids, 1):
+                r = riders_map.get(rid)
+                if r:
+                    db.session.add(RoodEntry(
+                        participant_id=p.id,
+                        custom_name=r.name,
+                        matched_rider_id=r.id,
+                        position=pos,
+                    ))
+
+        # Replace bonus answers (reset correct=False; admin re-evaluates)
+        BonusAnswer.query.filter_by(participant_id=p.id).delete()
+        for q in questions:
+            answer_text = request.form.get(f'bonus_{q.id}', '').strip()
+            if answer_text:
+                db.session.add(BonusAnswer(
+                    question_id=q.id, participant_id=p.id,
+                    correct=False, answer_text=answer_text))
+
+        db.session.commit()
+        flash('Je team is bijgewerkt!', 'success')
+        return redirect(url_for('deelnemer', pid=p.id))
+
+    # GET: build pre-filled context
+    riders_by_team = {}
+    for r in sorted(Rider.query.order_by(Rider.team, Rider.name).all(),
+                    key=lambda r: (r.team or 'zzz_overig', r.name)):
+        team_key = r.team or 'Overig'
+        riders_by_team.setdefault(team_key, []).append(r)
+
+    current_geel_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
+    current_rood_ids = {e.matched_rider_id for e in p.rood_entries if e.matched_rider_id}
+    current_bonus = {ba.question_id: ba.answer_text for ba in p.bonus_answers}
+
+    return render_template('inschrijven.html',
+                           riders=riders, riders_by_team=riders_by_team,
+                           questions=questions, gesloten=gesloten, deadline=INSCHRIJF_DEADLINE,
+                           inschrijfgeld=INSCHRIJFGELD, now=now,
+                           max_geel=MAX_GEEL, max_rood=MAX_ROOD,
+                           edit_mode=True, edit_token=token, participant=p,
+                           current_geel_ids=current_geel_ids,
+                           current_rood_ids=current_rood_ids,
+                           current_bonus=current_bonus)
 
 
 # ── Admin routes ───────────────────────────────────────────────────────────────

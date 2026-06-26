@@ -33,6 +33,25 @@
       </div>
       {% endif %}
 
+      {% if p and p.edit_token %}
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left text-sm text-blue-800 mb-4">
+        <div class="font-bold text-blue-900 mb-1">🔗 Jouw persoonlijke wijzigingslink</div>
+        <p class="text-xs text-blue-700 mb-3">
+          Via deze link kun je je team aanpassen tot de deadline (vrijdag 3 juli 2026 om 17:00).
+          <strong>Sla hem op</strong> — je hebt geen account nodig.
+        </p>
+        <div class="flex items-center gap-2">
+          <input type="text" readonly id="edit-link-input"
+                 value="{{ request.host_url.rstrip('/') }}{{ url_for('mijn_team', token=p.edit_token) }}"
+                 class="flex-1 border border-blue-200 rounded-lg px-2 py-1.5 text-xs font-mono bg-white text-gray-700 select-all">
+          <button onclick="navigator.clipboard.writeText(document.getElementById('edit-link-input').value).then(()=>{this.textContent='✓ Gekopieerd';setTimeout(()=>this.textContent='📋 Kopieer',2000)})"
+                  class="bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-blue-700 transition-colors whitespace-nowrap">
+            📋 Kopieer
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left text-sm text-amber-800 mb-6">
         <strong>💰 Vergeet het inschrijfgeld niet!</strong><br>
         Betaal €5,- — de betalingsinformatie wordt apart gecommuniceerd.

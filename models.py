@@ -13,6 +13,7 @@ class Participant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     cluster_id = db.Column(db.Integer, db.ForeignKey('cluster.id'), nullable=True)
+    edit_token = db.Column(db.String(36), nullable=True, unique=True)
     selections = db.relationship('Selection', backref='participant', lazy=True, cascade='all, delete-orphan')
     rood_entries = db.relationship('RoodEntry', backref='participant', lazy=True, cascade='all, delete-orphan')
     bonus_answers = db.relationship('BonusAnswer', backref='participant', lazy=True, cascade='all, delete-orphan')
