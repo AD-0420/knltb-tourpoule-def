@@ -121,7 +121,7 @@
               <td class="py-2.5 text-gray-400">{{ p.cluster.name if p.cluster else '—' }}</td>
               <td class="py-2.5 text-center">
                 {% set g = p.selections|selectattr('type','eq','geel')|list|length %}
-                <span class="counter-{% if g == 15 %}ok{% elif g > 0 %}warn{% else %}ok{% endif %}">{{ g }}/15</span>
+                <span class="counter-{% if g == 20 %}ok{% elif g > 0 %}warn{% else %}ok{% endif %}">{{ g }}/20</span>
               </td>
               <td class="py-2.5 text-center">
                 {% set r = p.rood_entries|list|length %}
@@ -132,7 +132,14 @@
                 {% endif %}
               </td>
               <td class="pr-4 py-2.5 text-right">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-end gap-2">
+                  {% if p.edit_token %}
+                  <button type="button" title="Kopieer wijzigingslink"
+                          onclick="copyLink('{{ request.host_url.rstrip('/') }}{{ url_for('mijn_team', token=p.edit_token) }}', this)"
+                          class="text-xs border border-blue-200 text-blue-500 px-2 py-0.5 rounded hover:bg-blue-50 transition-colors">
+                    🔗
+                  </button>
+                  {% endif %}
                   <a href="{{ url_for('admin_teams', pid=p.id) }}"
                      class="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded hover:bg-gray-50 transition-colors">
                     Team
@@ -154,4 +161,17 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyLink(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    btn.classList.add('bg-blue-100');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('bg-blue-100'); }, 2000);
+  });
+}
+</script>
 {% endblock %}
