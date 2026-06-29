@@ -63,10 +63,8 @@ INSCHRIJFGELD = '€5,-'
 def require_admin(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or auth.password != app.config['ADMIN_PASSWORD']:
-            return ('Toegang geweigerd. Voer het admin wachtwoord in.', 401,
-                    {'WWW-Authenticate': 'Basic realm="Admin"'})
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login', next=request.url))
         return f(*args, **kwargs)
     return decorated
 
@@ -611,6 +609,28 @@ def mijn_team(token):
 
 
 # ── Admin routes ───────────────────────────────────────────────────────────────
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_index'))
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if password == app.config['ADMIN_PASSWORD']:
+            session['admin_logged_in'] = True
+            session.permanent = True
+            next_url = request.form.get('next') or url_for('admin_index')
+            return redirect(next_url)
+        flash('Ongeldig wachtwoord.', 'danger')
+    return render_template('admin/login.html', next=request.args.get('next', ''))
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    flash('Je bent uitgelogd.', 'info')
+    return redirect(url_for('index'))
+
 
 @app.route('/admin/handleiding')
 @require_admin
