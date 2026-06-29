@@ -56,7 +56,7 @@ JERSEY_CLASSES = {'yellow': 'jersey-yellow', 'green': 'jersey-green',
                   'polka': 'jersey-polka', 'white': 'jersey-white'}
 MAX_GEEL = 20
 MAX_ROOD = 15
-INSCHRIJF_DEADLINE = datetime(2026, 7, 4, 12, 0, 0)
+INSCHRIJF_DEADLINE = datetime(2026, 7, 4, 17, 0, 0)
 INSCHRIJFGELD = '€5,-'
 
 

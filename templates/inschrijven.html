@@ -16,7 +16,7 @@
           </span>
         {% else %}
           <div class="text-gray-400 text-xs mb-1">Deadline</div>
-          <div class="text-tdf-yellow font-bold text-lg">vrijdag 3 juli 2026 · 17:00</div>
+          <div class="text-tdf-yellow font-bold text-lg">zaterdag 4 juli 2026 · 17:00</div>
           <div id="countdown" class="text-gray-400 text-sm mt-1"></div>
         {% endif %}
       </div>
@@ -28,7 +28,7 @@
 <div class="px-6 lg:px-10 py-16 text-center">
   <div class="text-6xl mb-4">🔒</div>
   <h2 class="text-2xl font-bold text-gray-700 mb-2">Inschrijving gesloten</h2>
-  <p class="text-gray-500">De deadline was vrijdag 3 juli 2026 om 17:00.<br>Neem contact op met de beheerder als je vragen hebt.</p>
+  <p class="text-gray-500">De deadline was zaterdag 4 juli 2026 om 17:00.<br>Neem contact op met de beheerder als je vragen hebt.</p>
   <a href="{{ url_for('geel_klassement') }}" class="inline-block mt-6 bg-tdf-yellow text-zinc-900 font-semibold px-6 py-3 rounded-xl hover:bg-yellow-300 transition-colors">
     Bekijk de standen →
   </a>
@@ -401,7 +401,7 @@
             </li>
             <li class="flex items-start gap-2">
               <span class="text-red-400 mt-0.5">⏰</span>
-              Deadline: <strong>vrijdag 3 juli 2026, 17:00</strong>
+              Deadline: <strong>zaterdag 4 juli 2026, 17:00</strong>
             </li>
           </ul>
         </div>
@@ -720,7 +720,7 @@ if (EDIT_MODE) {
 }
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
-const deadline = new Date('2026-07-03T17:00:00');
+const deadline = new Date('2026-07-04T17:00:00');
 function updateCountdown() {
   const diff = deadline - new Date();
   if (diff <= 0) { document.getElementById('countdown') && (document.getElementById('countdown').textContent = 'Inschrijving gesloten'); return; }
