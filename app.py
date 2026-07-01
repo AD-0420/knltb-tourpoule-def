@@ -286,7 +286,9 @@ def renners():
                 'rood_pct': round(rc / n_participants * 100),
             })
     data.sort(key=lambda x: x['points'], reverse=True)
-    return render_template('renners.html', rider_data=data, n_participants=n_participants)
+    teams_visible = datetime.now() >= INSCHRIJF_DEADLINE
+    return render_template('renners.html', rider_data=data, n_participants=n_participants,
+                           teams_visible=teams_visible)
 
 
 @app.route('/api/chart/geel')
