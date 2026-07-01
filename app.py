@@ -733,6 +733,34 @@ def admin_deelnemers():
                     added += 1
             db.session.commit()
             flash(f'{added} deelnemers toegevoegd.', 'success')
+        elif action == 'change_cluster':
+            pid = request.form.get('participant_id')
+            cluster_id = request.form.get('cluster_id') or None
+            p = Participant.query.get(pid)
+            if p:
+                p.cluster_id = cluster_id
+                db.session.commit()
+                flash(f'Afdeling van {p.name} aangepast.', 'success')
+        elif action == 'rename_cluster':
+            cid = request.form.get('cluster_id_rename')
+            new_name = request.form.get('new_name', '').strip()
+            c = Cluster.query.get(cid)
+            if c and new_name:
+                existing = Cluster.query.filter_by(name=new_name).first()
+                if existing and existing.id != c.id:
+                    # Samenvoegen: verplaats deelnemers naar bestaande cluster, verwijder deze.
+                    # Via de relationship (p.cluster) zodat de FK niet weer op NULL wordt gezet.
+                    for p in list(c.participants):
+                        p.cluster = existing
+                    db.session.flush()
+                    db.session.delete(c)
+                    db.session.commit()
+                    flash(f'Cluster "{c.name}" samengevoegd met "{new_name}".', 'success')
+                else:
+                    old = c.name
+                    c.name = new_name
+                    db.session.commit()
+                    flash(f'Cluster "{old}" hernoemd naar "{new_name}".', 'success')
         elif action == 'delete_participant':
             pid = request.form.get('participant_id')
             p = Participant.query.get(pid)

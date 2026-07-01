@@ -27,11 +27,16 @@
           {% if clusters %}
           <ul class="divide-y divide-gray-100">
             {% for c in clusters %}
-            <li class="flex items-center justify-between py-2">
-              <span class="text-sm text-gray-700">
-                {{ c.name }}
-                <span class="text-gray-400 text-xs ml-1">({{ c.participants|length }})</span>
-              </span>
+            <li class="flex items-center justify-between py-2 gap-2">
+              <form method="post" class="flex items-center gap-1 flex-1 min-w-0">
+                <input type="hidden" name="action" value="rename_cluster">
+                <input type="hidden" name="cluster_id_rename" value="{{ c.id }}">
+                <input type="text" name="new_name" value="{{ c.name }}"
+                       class="flex-1 min-w-0 border border-transparent hover:border-gray-200 focus:border-gray-300 rounded px-1.5 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-transparent focus:bg-white">
+                <span class="text-gray-400 text-xs whitespace-nowrap">({{ c.participants|length }})</span>
+                <button title="Naam opslaan"
+                        class="text-xs text-gray-400 hover:text-green-600 transition-colors px-1">✓</button>
+              </form>
               <form method="post" onsubmit="return confirm('Cluster verwijderen?')">
                 <input type="hidden" name="action" value="delete_cluster">
                 <input type="hidden" name="cluster_id_del" value="{{ c.id }}">
@@ -43,6 +48,7 @@
           {% else %}
           <p class="text-sm text-gray-400">Nog geen clusters.</p>
           {% endif %}
+          <p class="text-xs text-gray-400 mt-3">Tip: hernoem een cluster naar de naam van een bestaand cluster om ze samen te voegen.</p>
         </div>
       </div>
     </div>
@@ -118,7 +124,19 @@
             {% for p in participants %}
             <tr class="hover:bg-slate-50 transition-colors">
               <td class="pl-4 py-2.5 font-semibold text-gray-900">{{ p.name }}</td>
-              <td class="py-2.5 text-gray-400">{{ p.cluster.name if p.cluster else '—' }}</td>
+              <td class="py-2.5">
+                <form method="post" class="inline">
+                  <input type="hidden" name="action" value="change_cluster">
+                  <input type="hidden" name="participant_id" value="{{ p.id }}">
+                  <select name="cluster_id" onchange="this.form.submit()"
+                          class="border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-white">
+                    <option value="" {% if not p.cluster %}selected{% endif %}>— Geen —</option>
+                    {% for c in clusters %}
+                    <option value="{{ c.id }}" {% if p.cluster and p.cluster.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
               <td class="py-2.5 text-center">
                 {% set g = p.selections|selectattr('type','eq','geel')|list|length %}
                 <span class="counter-{% if g == 20 %}ok{% elif g > 0 %}warn{% else %}ok{% endif %}">{{ g }}/20</span>
