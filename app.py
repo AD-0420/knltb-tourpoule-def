@@ -1224,6 +1224,18 @@ def _scrape_stage_results(stage_num):
     return results, None
 
 
+def _clean_rider_name(name):
+    """Normalise a scraped rider name.
+
+    PCS marks young-classification riders (witte trui) with a trailing '*'
+    (e.g. 'DEL TORO Isaac*'). Strip asterisks and collapse whitespace so the
+    name matches the database and doesn't create duplicates on import.
+    """
+    import re
+    name = name.replace('*', '')
+    return re.sub(r'\s+', ' ', name).strip()
+
+
 def _parse_names_from_pcs_html(html_or_text):
     """Extract riders from PCS HTML or plain text.
 
@@ -1255,7 +1267,7 @@ def _parse_names_from_pcs_html(html_or_text):
                     team_name = b.get_text(strip=True) if b else None
 
                 for a in team_li.select('a[href*="/rider/"]'):
-                    name = a.get_text(strip=True)
+                    name = _clean_rider_name(a.get_text(strip=True))
                     if name and 3 < len(name) < 60 and ' ' in name and name not in seen:
                         riders.append({'name': name, 'team': team_name})
                         seen.add(name)
@@ -1264,7 +1276,7 @@ def _parse_names_from_pcs_html(html_or_text):
         if not riders:
             for a in soup.find_all('a', href=True):
                 if '/rider/' in a['href']:
-                    name = a.get_text(strip=True)
+                    name = _clean_rider_name(a.get_text(strip=True))
                     if name and 3 < len(name) < 60 and ' ' in name and name not in seen:
                         riders.append({'name': name, 'team': None})
                         seen.add(name)
@@ -1321,8 +1333,8 @@ def _parse_names_from_pcs_html(html_or_text):
                     # Treat remainder as team name
                     current_team = line
                     continue
-                name = ' '.join(lastname_parts) + ' ' + ' '.join(firstname_parts)
-                if name not in seen and len(name) < 60:
+                name = _clean_rider_name(' '.join(lastname_parts) + ' ' + ' '.join(firstname_parts))
+                if name and name not in seen and len(name) < 60:
                     riders.append({'name': name, 'team': current_team})
                     seen.add(name)
             else:
