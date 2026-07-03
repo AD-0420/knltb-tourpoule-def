@@ -86,8 +86,15 @@
                 <td class="py-2 font-medium {% if r.niet_gestart %}text-gray-400 line-through{% else %}text-gray-800{% endif %}">
                   {{ r.name }}
                 </td>
-                <td class="py-2 text-xs {% if r.niet_gestart %}text-gray-300{% else %}text-gray-400{% endif %}">
-                  {{ r.team or '—' }}
+                <td class="py-2 text-xs">
+                  <form method="post" class="flex items-center gap-1">
+                    <input type="hidden" name="action" value="edit_team">
+                    <input type="hidden" name="rider_id" value="{{ r.id }}">
+                    <input type="text" name="team" value="{{ r.team or '' }}" placeholder="—"
+                           class="w-full min-w-0 border border-transparent hover:border-gray-200 focus:border-gray-300 rounded px-1.5 py-1 text-xs {% if r.niet_gestart %}text-gray-300{% else %}text-gray-500{% endif %} focus:outline-none focus:ring-2 focus:ring-tdf-yellow bg-transparent focus:bg-white">
+                    <button title="Team opslaan"
+                            class="text-xs text-gray-300 hover:text-green-600 transition-colors px-1">✓</button>
+                  </form>
                 </td>
                 <td class="py-2 text-center">
                   <form method="post" class="inline">

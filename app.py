@@ -814,6 +814,14 @@ def admin_renners():
                     added += 1
             db.session.commit()
             flash(f'{added} renners toegevoegd.', 'success')
+        elif action == 'edit_team':
+            rid = request.form.get('rider_id')
+            team = request.form.get('team', '').strip() or None
+            r = Rider.query.get(rid)
+            if r:
+                r.team = team
+                db.session.commit()
+                flash(f'Team van {r.name} aangepast naar "{team or "—"}".', 'success')
         elif action == 'delete':
             rid = request.form.get('rider_id')
             r = Rider.query.get(rid)
