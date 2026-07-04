@@ -5,6 +5,7 @@ import os
 import unicodedata
 import uuid
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from functools import wraps
 from rapidfuzz import fuzz, process as fuzz_process
@@ -56,7 +57,15 @@ JERSEY_CLASSES = {'yellow': 'jersey-yellow', 'green': 'jersey-green',
                   'polka': 'jersey-polka', 'white': 'jersey-white'}
 MAX_GEEL = 20
 MAX_ROOD = 15
-INSCHRIJF_DEADLINE = datetime(2026, 7, 4, 17, 0, 0)
+# Nederlandse tijdzone: de server (Railway) draait in UTC, dus de deadline en alle
+# "nu"-vergelijkingen moeten expliciet in Europe/Amsterdam om niet 2 uur af te wijken.
+NL_TZ = ZoneInfo('Europe/Amsterdam')
+INSCHRIJF_DEADLINE = datetime(2026, 7, 4, 17, 0, 0, tzinfo=NL_TZ)
+
+
+def now_nl():
+    """Huidige tijd in de Nederlandse tijdzone (los van de server-tijdzone)."""
+    return datetime.now(NL_TZ)
 INSCHRIJFGELD = '€5,-'
 
 
@@ -240,7 +249,7 @@ def deelnemer(pid):
 
     all_participants = Participant.query.order_by(Participant.name).all()
     stage_points = get_participant_stage_points(pid)
-    teams_visible = datetime.now() >= INSCHRIJF_DEADLINE
+    teams_visible = now_nl() >= INSCHRIJF_DEADLINE
 
     return render_template('deelnemer.html', p=p, geel_team=geel_team,
                            rood_team=rood_team, geel_total=geel_total,
@@ -286,7 +295,7 @@ def renners():
                 'rood_pct': round(rc / n_participants * 100),
             })
     data.sort(key=lambda x: x['points'], reverse=True)
-    teams_visible = datetime.now() >= INSCHRIJF_DEADLINE
+    teams_visible = now_nl() >= INSCHRIJF_DEADLINE
     return render_template('renners.html', rider_data=data, n_participants=n_participants,
                            teams_visible=teams_visible)
 
@@ -426,7 +435,7 @@ def api_chart_positie():
 def inschrijven():
     riders = Rider.query.order_by(Rider.name).all()
     questions = BonusQuestion.query.order_by(BonusQuestion.number).all()
-    now = datetime.now()
+    now = now_nl()
     gesloten = now > INSCHRIJF_DEADLINE
 
     if request.method == 'POST':
@@ -524,7 +533,7 @@ def mijn_team(token):
     p = Participant.query.filter_by(edit_token=token).first_or_404()
     riders = Rider.query.order_by(Rider.name).all()
     questions = BonusQuestion.query.order_by(BonusQuestion.number).all()
-    now = datetime.now()
+    now = now_nl()
     gesloten = now > INSCHRIJF_DEADLINE
 
     if request.method == 'POST':
