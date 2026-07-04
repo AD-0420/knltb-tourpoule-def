@@ -81,6 +81,17 @@ def require_admin(f):
     return decorated
 
 
+@app.context_processor
+def inject_tour_status():
+    """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen,
+    zodat de eindstand pas aan het einde zichtbaar wordt."""
+    try:
+        finished = Stage.query.count() >= TOTAL_STAGES
+    except Exception:
+        finished = False
+    return {'tour_finished': finished}
+
+
 def get_rider_points_map():
     """Return dict of rider_id -> total_points for all riders."""
     from collections import defaultdict
@@ -195,8 +206,16 @@ def geel_klassement():
 def rood_klassement():
     scores = get_participant_scores()
     standings = sorted((s for s in scores if s['has_rood']), key=lambda x: x['rood'])
+    # Tie-bewuste ranking: gelijke scores delen dezelfde rang (1, 1, 3, …)
     for i, s in enumerate(standings):
-        s['rank'] = i + 1
+        if i > 0 and s['rood'] == standings[i - 1]['rood']:
+            s['rank'] = standings[i - 1]['rank']
+        else:
+            s['rank'] = i + 1
+    # Iedereen met de laagste score is (gedeeld) rode lantaarn
+    min_rood = standings[0]['rood'] if standings else None
+    for s in standings:
+        s['is_lantaarn'] = (min_rood is not None and s['rood'] == min_rood)
     return render_template('rood.html', standings=standings)
 
 

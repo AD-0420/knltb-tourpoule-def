@@ -63,11 +63,13 @@
                   {% if request.endpoint == 'renners' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
           <i class="bi bi-person-badge mr-1"></i>Renners
         </a>
+        {% if tour_finished %}
         <a href="{{ url_for('eindstand') }}"
            class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
                   {% if request.endpoint == 'eindstand' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
           🏆 Eindstand
         </a>
+        {% endif %}
         <a href="{{ url_for('inschrijven') }}"
            class="px-3 py-2 rounded-lg text-sm font-bold transition-colors
                   {% if request.endpoint == 'inschrijven' %}bg-tdf-yellow text-zinc-900{% else %}bg-tdf-yellow/20 text-tdf-yellow hover:bg-tdf-yellow hover:text-zinc-900{% endif %}">
@@ -155,7 +157,9 @@
         <a href="{{ url_for('rood_klassement') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🔴 Rode Lantaarn</a>
         <a href="{{ url_for('etappes') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚩 Etappes</a>
         <a href="{{ url_for('renners') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚴 Renners</a>
+        {% if tour_finished %}
         <a href="{{ url_for('eindstand') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🏆 Eindstand</a>
+        {% endif %}
         <a href="{{ url_for('inschrijven') }}" class="px-3 py-2 text-tdf-yellow font-semibold text-sm">✍️ Inschrijven</a>
         <a href="{{ url_for('admin_index') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">⚙️ Admin</a>
       </div>
