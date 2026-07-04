@@ -597,7 +597,7 @@ def mijn_team(token):
 
     current_geel_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
     current_rood_ids = {e.matched_rider_id for e in p.rood_entries if e.matched_rider_id}
-    current_bonus = {ba.question_id: ba.answer_text for ba in p.bonus_answers}
+    current_bonus = {ba.question_id: (ba.answer_text or '') for ba in p.bonus_answers}
 
     return render_template('inschrijven.html',
                            riders=riders, riders_by_team=riders_by_team,

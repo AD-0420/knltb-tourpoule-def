@@ -331,7 +331,7 @@
             <span class="text-xs text-gray-400 font-normal ml-1">(optioneel)</span>
           </label>
           <input type="text" name="bonus_{{ q.id }}" placeholder="Jouw antwoord…"
-                 value="{{ current_bonus.get(q.id, '') if edit_mode else '' }}"
+                 value="{{ (current_bonus.get(q.id) or '') if edit_mode else '' }}"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-tdf-yellow">
         </div>
         {% endfor %}
