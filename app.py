@@ -83,13 +83,17 @@ def require_admin(f):
 
 @app.context_processor
 def inject_tour_status():
-    """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen,
-    zodat de eindstand pas aan het einde zichtbaar wordt."""
+    """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen
+    (eindstand pas aan het einde zichtbaar) en of inschrijven nog open is
+    (Inschrijven-knop verbergen na de deadline)."""
     try:
         finished = Stage.query.count() >= TOTAL_STAGES
     except Exception:
         finished = False
-    return {'tour_finished': finished}
+    return {
+        'tour_finished': finished,
+        'inschrijving_open': now_nl() <= INSCHRIJF_DEADLINE,
+    }
 
 
 def get_rider_points_map():

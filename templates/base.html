@@ -70,11 +70,13 @@
           🏆 Eindstand
         </a>
         {% endif %}
+        {% if inschrijving_open %}
         <a href="{{ url_for('inschrijven') }}"
            class="px-3 py-2 rounded-lg text-sm font-bold transition-colors
                   {% if request.endpoint == 'inschrijven' %}bg-tdf-yellow text-zinc-900{% else %}bg-tdf-yellow/20 text-tdf-yellow hover:bg-tdf-yellow hover:text-zinc-900{% endif %}">
           ✍️ Inschrijven
         </a>
+        {% endif %}
 
         <!-- Admin dropdown -->
         <div class="relative ml-2" id="admin-menu">
@@ -160,7 +162,9 @@
         {% if tour_finished %}
         <a href="{{ url_for('eindstand') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🏆 Eindstand</a>
         {% endif %}
+        {% if inschrijving_open %}
         <a href="{{ url_for('inschrijven') }}" class="px-3 py-2 text-tdf-yellow font-semibold text-sm">✍️ Inschrijven</a>
+        {% endif %}
         <a href="{{ url_for('admin_index') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">⚙️ Admin</a>
       </div>
     </div>
