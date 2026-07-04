@@ -57,6 +57,9 @@ JERSEY_CLASSES = {'yellow': 'jersey-yellow', 'green': 'jersey-green',
                   'polka': 'jersey-polka', 'white': 'jersey-white'}
 MAX_GEEL = 20
 MAX_ROOD = 15
+# Totaal aantal etappes in de Tour de France; bepaalt of de stand een tussenstand
+# of de definitieve eindstand is.
+TOTAL_STAGES = 21
 # Nederlandse tijdzone: de server (Railway) draait in UTC, dus de deadline en alle
 # "nu"-vergelijkingen moeten expliciet in Europe/Amsterdam om niet 2 uur af te wijken.
 NL_TZ = ZoneInfo('Europe/Amsterdam')
@@ -207,8 +210,10 @@ def eindstand():
     for i, s in enumerate(rood):
         s['rood_rank'] = i + 1
     stages_done = Stage.query.count()
+    is_final = stages_done >= TOTAL_STAGES
     return render_template('eindstand.html', geel=geel, rood=rood,
-                           stages_done=stages_done)
+                           stages_done=stages_done, total_stages=TOTAL_STAGES,
+                           is_final=is_final)
 
 
 @app.route('/deelnemer/<int:pid>')

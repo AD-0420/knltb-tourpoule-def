@@ -4,12 +4,16 @@
 {% block content %}
 <div class="bg-gradient-to-br from-zinc-950 to-zinc-800 border-b-4 border-tdf-yellow py-10 mb-8">
   <div class="w-full px-6 lg:px-10">
-    <h1 class="text-3xl font-extrabold text-tdf-yellow">🏆 Eindstand Tourpoule 2026</h1>
+    <h1 class="text-3xl font-extrabold text-tdf-yellow">
+      {% if is_final %}🏆 Eindstand Tourpoule 2026{% else %}📊 Tussenstand Tourpoule 2026{% endif %}
+    </h1>
     <p class="text-gray-400 mt-1">
-      {% if stages_done > 0 %}
-        Op basis van {{ stages_done }} etappe{{ 's' if stages_done != 1 else '' }}
-      {% else %}
+      {% if stages_done == 0 %}
         Nog geen etappes ingevoerd
+      {% elif is_final %}
+        Definitieve eindstand na alle {{ total_stages }} etappes
+      {% else %}
+        Tussenstand na {{ stages_done }} van {{ total_stages }} etappes — nog niet definitief
       {% endif %}
     </p>
   </div>
@@ -17,17 +21,19 @@
 
 <div class="w-full px-6 lg:px-10 pb-12 space-y-8">
 
-  {% if geel %}
-  <!-- Winnaar geel -->
+  {% if geel and stages_done > 0 %}
+  <!-- Leider / winnaar geel -->
   {% set winner = geel[0] %}
   <div class="bg-gradient-to-r from-amber-400 to-tdf-yellow rounded-2xl shadow-lg p-6 text-center">
-    <div class="text-5xl mb-2">🥇</div>
+    <div class="text-5xl mb-2">{% if is_final %}🥇{% else %}🟡{% endif %}</div>
     <div class="text-2xl font-extrabold text-zinc-900">{{ winner.participant.name }}</div>
     {% if winner.participant.cluster %}
     <div class="text-zinc-700 text-sm mt-0.5">{{ winner.participant.cluster.name }}</div>
     {% endif %}
     <div class="mt-3 text-zinc-800 font-bold text-xl">{{ winner.geel }} punten</div>
-    <div class="text-zinc-600 text-sm mt-1">Winnaar Geel Klassement</div>
+    <div class="text-zinc-600 text-sm mt-1">
+      {% if is_final %}Winnaar Geel Klassement{% else %}Huidige leider Geel Klassement{% endif %}
+    </div>
   </div>
   {% endif %}
 
@@ -95,12 +101,14 @@
       </div>
 
       <!-- Winnaar rood -->
-      {% if rood %}
+      {% if rood and stages_done > 0 %}
       {% set rood_winner = rood[0] %}
       <div class="bg-red-50 border-b border-red-100 px-5 py-3 text-center">
         <div class="text-2xl mb-1">🏮</div>
         <div class="font-bold text-red-800">{{ rood_winner.participant.name }}</div>
-        <div class="text-red-600 text-xs">Winnaar Rode Lantaarn — {{ rood_winner.rood }} pts</div>
+        <div class="text-red-600 text-xs">
+          {% if is_final %}Winnaar Rode Lantaarn{% else %}Huidige rode lantaarn{% endif %} — {{ rood_winner.rood }} pts
+        </div>
       </div>
       {% endif %}
 
