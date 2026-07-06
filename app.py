@@ -195,15 +195,32 @@ def geel_klassement():
 
     clusters = Cluster.query.order_by(Cluster.name).all()
     cluster_data = {}
+    cluster_ranking = []
     for c in clusters:
         members = [s for s in standings if s['participant'].cluster_id == c.id]
         if members:
             cluster_data[c.name] = members
+            total = sum(s['geel'] for s in members)
+            cluster_ranking.append({
+                'name': c.name,
+                'count': len(members),
+                'total': total,
+                'avg': total / len(members),
+            })
+
+    # Ranglijst op gemiddelde gele score (hoogste gemiddelde eerst), tie-bewust
+    cluster_ranking.sort(key=lambda x: x['avg'], reverse=True)
+    for i, cr in enumerate(cluster_ranking):
+        if i > 0 and cr['avg'] == cluster_ranking[i - 1]['avg']:
+            cr['rank'] = cluster_ranking[i - 1]['rank']
+        else:
+            cr['rank'] = i + 1
 
     unclustered = [s for s in standings if s['participant'].cluster_id is None]
 
     return render_template('geel.html', standings=standings,
-                           cluster_data=cluster_data, unclustered=unclustered)
+                           cluster_data=cluster_data, unclustered=unclustered,
+                           cluster_ranking=cluster_ranking)
 
 
 @app.route('/rood')

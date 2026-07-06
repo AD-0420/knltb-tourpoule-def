@@ -68,6 +68,42 @@
     </table>
   </div>
 
+  <!-- Clusterranglijst op gemiddelde score -->
+  {% if cluster_ranking %}
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-3 bg-tdf-yellow">
+      <span class="font-bold text-zinc-900"><i class="bi bi-people-fill mr-2"></i>Clusterranglijst</span>
+      <span class="text-xs text-zinc-700 font-medium ml-1">— gemiddelde gele score per cluster</span>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="bg-zinc-900 text-left text-xs font-semibold text-tdf-yellow uppercase tracking-wider">
+          <th class="pl-4 py-3 w-14">#</th>
+          <th class="py-3">Cluster</th>
+          <th class="py-3 text-center text-gray-400">Deelnemers</th>
+          <th class="py-3 text-right text-gray-400">Totaal</th>
+          <th class="pr-4 py-3 text-right">Gemiddelde</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for cr in cluster_ranking %}
+        <tr class="hover:bg-yellow-50 transition-colors">
+          <td class="pl-4 py-3">
+            <span class="rank-badge rank-{% if cr.rank <= 3 %}{{ cr.rank }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
+              {{ cr.rank }}
+            </span>
+          </td>
+          <td class="py-3 font-semibold text-gray-900">{{ cr.name }}</td>
+          <td class="py-3 text-center text-sm text-gray-500">{{ cr.count }}</td>
+          <td class="py-3 text-right text-sm text-gray-400">{{ cr.total }}</td>
+          <td class="pr-4 py-3 text-right"><span class="pts-badge">{{ '%.1f'|format(cr.avg) }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
   <!-- Per cluster -->
   {% if cluster_data %}
   <h2 class="text-xl font-bold text-gray-900 pt-2">Clusterklassement</h2>
