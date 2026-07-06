@@ -146,6 +146,45 @@ def get_participant_stage_points(participant_id):
     return rows
 
 
+def get_last_stage_deltas():
+    """Bereken voor de meest recente etappe hoeveel geel-punten elke deelnemer
+    erbij kreeg. Returnt (stage_number, {participant_id: punten}, hoogste_score).
+    Als er nog geen etappe is: (None, {}, 0)."""
+    from collections import defaultdict
+    last_stage = Stage.query.order_by(Stage.number.desc()).first()
+    if not last_stage:
+        return None, {}, 0
+
+    rider_pts = defaultdict(int)
+    for r in StageResult.query.filter_by(stage_id=last_stage.id).all():
+        rider_pts[r.rider_id] += POINTS_TABLE.get(r.position, 0)
+    for jw in JerseyWearer.query.filter_by(stage_id=last_stage.id).all():
+        rider_pts[jw.rider_id] += JERSEY_DAILY_POINTS
+
+    part_geel = defaultdict(set)
+    for s in Selection.query.filter_by(type='geel').all():
+        part_geel[s.participant_id].add(s.rider_id)
+
+    deltas = {}
+    for pid, rider_ids in part_geel.items():
+        deltas[pid] = sum(rider_pts.get(rid, 0) for rid in rider_ids)
+
+    best = max(deltas.values()) if deltas else 0
+    return last_stage.number, deltas, best
+
+
+def annotate_last_stage(standings):
+    """Voeg per deelnemer de dagscore van de laatste etappe toe ('last_delta')
+    en markeer wie de hoogste dagscore heeft ('is_day_leader').
+    Returnt het etappenummer (of None)."""
+    stage_num, deltas, best = get_last_stage_deltas()
+    for s in standings:
+        d = deltas.get(s['participant'].id, 0)
+        s['last_delta'] = d
+        s['is_day_leader'] = (stage_num is not None and best > 0 and d == best)
+    return stage_num
+
+
 def get_participant_scores():
     """Return list of dicts with geel/rood scores per participant."""
     rider_points = get_rider_points_map()
@@ -180,10 +219,13 @@ def get_participant_scores():
 @app.route('/')
 def index():
     scores = get_participant_scores()
-    geel = sorted(scores, key=lambda x: x['geel'], reverse=True)[:5]
+    geel_all = sorted(scores, key=lambda x: x['geel'], reverse=True)
+    last_stage_num = annotate_last_stage(geel_all)
+    geel = geel_all[:5]
     rood = sorted((s for s in scores if s['has_rood']), key=lambda x: x['rood'])[:5]
     stages_done = Stage.query.count()
-    return render_template('index.html', geel=geel, rood=rood, stages_done=stages_done)
+    return render_template('index.html', geel=geel, rood=rood, stages_done=stages_done,
+                           last_stage_num=last_stage_num)
 
 
 @app.route('/geel')
@@ -192,6 +234,7 @@ def geel_klassement():
     standings = sorted(scores, key=lambda x: x['geel'], reverse=True)
     for i, s in enumerate(standings):
         s['rank'] = i + 1
+    last_stage_num = annotate_last_stage(standings)
 
     clusters = Cluster.query.order_by(Cluster.name).all()
     cluster_data = {}
@@ -220,7 +263,8 @@ def geel_klassement():
 
     return render_template('geel.html', standings=standings,
                            cluster_data=cluster_data, unclustered=unclustered,
-                           cluster_ranking=cluster_ranking)
+                           cluster_ranking=cluster_ranking,
+                           last_stage_num=last_stage_num)
 
 
 @app.route('/rood')

@@ -41,7 +41,7 @@
       <table class="w-full">
         <tbody class="divide-y divide-gray-100">
           {% for s in geel %}
-          <tr class="hover:bg-yellow-50 transition-colors">
+          <tr class="hover:bg-yellow-50 transition-colors {% if s.is_day_leader %}bg-green-50{% endif %}">
             <td class="pl-4 py-3 w-12">
               <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
                 {{ loop.index }}
@@ -54,8 +54,14 @@
               {% if s.participant.cluster %}
                 <span class="text-xs text-gray-400 ml-1">{{ s.participant.cluster.name }}</span>
               {% endif %}
+              {% if s.is_day_leader %}
+                <span class="ml-1 text-xs bg-green-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">🔥 Hoogste dagscore</span>
+              {% endif %}
             </td>
-            <td class="pr-4 py-3 text-right">
+            <td class="pr-4 py-3 text-right whitespace-nowrap">
+              {% if last_stage_num and s.last_delta > 0 %}
+                <span class="text-xs font-semibold {% if s.is_day_leader %}text-green-600{% else %}text-gray-400{% endif %} mr-2">+{{ s.last_delta }}</span>
+              {% endif %}
               <span class="pts-badge">{{ s.geel }} pts</span>
             </td>
           </tr>

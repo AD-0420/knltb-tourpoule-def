@@ -42,12 +42,15 @@
           <th class="pl-4 py-3 w-14">#</th>
           <th class="py-3">Deelnemer</th>
           <th class="py-3 text-gray-400">Cluster</th>
+          {% if last_stage_num %}
+          <th class="py-3 text-right text-gray-400">Etappe {{ last_stage_num }}</th>
+          {% endif %}
           <th class="pr-4 py-3 text-right">Punten</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
         {% for s in standings %}
-        <tr class="hover:bg-yellow-50 transition-colors">
+        <tr class="hover:bg-yellow-50 transition-colors {% if s.is_day_leader %}bg-green-50{% endif %}">
           <td class="pl-4 py-3">
             <span class="rank-badge rank-{% if s.rank <= 3 %}{{ s.rank }}{% else %}other{% endif %} inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">
               {{ s.rank }}
@@ -57,12 +60,24 @@
             <a href="{{ url_for('deelnemer', pid=s.participant.id) }}" class="font-semibold text-gray-900 hover:text-amber-600">
               {{ s.participant.name }}
             </a>
+            {% if s.is_day_leader %}
+            <span class="ml-2 text-xs bg-green-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">🔥 Hoogste dagscore</span>
+            {% endif %}
           </td>
           <td class="py-3 text-sm text-gray-400">{{ s.participant.cluster.name if s.participant.cluster else '—' }}</td>
+          {% if last_stage_num %}
+          <td class="py-3 text-right">
+            {% if s.last_delta > 0 %}
+              <span class="text-sm font-semibold {% if s.is_day_leader %}text-green-600{% else %}text-gray-500{% endif %}">+{{ s.last_delta }}</span>
+            {% else %}
+              <span class="text-sm text-gray-300">+0</span>
+            {% endif %}
+          </td>
+          {% endif %}
           <td class="pr-4 py-3 text-right"><span class="pts-badge">{{ s.geel }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="text-center text-gray-400 py-8">Geen deelnemers gevonden.</td></tr>
+        <tr><td colspan="{% if last_stage_num %}5{% else %}4{% endif %}" class="text-center text-gray-400 py-8">Geen deelnemers gevonden.</td></tr>
         {% endfor %}
       </tbody>
     </table>
