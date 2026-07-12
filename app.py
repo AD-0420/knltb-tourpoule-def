@@ -146,6 +146,45 @@ def get_participant_stage_points(participant_id):
     return rows
 
 
+def get_participant_stage_breakdown(participant_id):
+    """Per etappe: welke geel-renners van deze deelnemer punten scoorden en hoeveel.
+    Returnt lijst van {'stage': num, 'total': int, 'riders': [{'name','points','jerseys'}]}
+    voor alle ingevoerde etappes, gesorteerd op etappenummer."""
+    from collections import defaultdict
+    p = Participant.query.get(participant_id)
+    if not p:
+        return []
+    geel_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
+    if not geel_ids:
+        return []
+    names = {r.id: r.name for r in Rider.query.filter(Rider.id.in_(geel_ids)).all()}
+
+    # stage_id -> rider_id -> {'points': int, 'jerseys': [labels]}
+    per = defaultdict(lambda: defaultdict(lambda: {'points': 0, 'jerseys': []}))
+    for res in StageResult.query.all():
+        if res.rider_id in geel_ids:
+            per[res.stage_id][res.rider_id]['points'] += POINTS_TABLE.get(res.position, 0)
+    for jw in JerseyWearer.query.all():
+        if jw.rider_id in geel_ids:
+            per[jw.stage_id][jw.rider_id]['points'] += JERSEY_DAILY_POINTS
+            per[jw.stage_id][jw.rider_id]['jerseys'].append(
+                JERSEY_LABELS.get(jw.jersey_type, jw.jersey_type))
+
+    breakdown = []
+    for stage in Stage.query.order_by(Stage.number).all():
+        riders = []
+        for rid, info in per.get(stage.id, {}).items():
+            if info['points'] > 0:
+                riders.append({'name': names.get(rid, '?'),
+                               'points': info['points'],
+                               'jerseys': info['jerseys']})
+        riders.sort(key=lambda x: x['points'], reverse=True)
+        breakdown.append({'stage': stage.number,
+                          'total': sum(r['points'] for r in riders),
+                          'riders': riders})
+    return breakdown
+
+
 def get_last_stage_deltas():
     """Bereken voor de meest recente etappe hoeveel geel-punten elke deelnemer
     erbij kreeg. Returnt (stage_number, {participant_id: punten}, hoogste_score).
@@ -338,6 +377,7 @@ def deelnemer(pid):
 
     all_participants = Participant.query.order_by(Participant.name).all()
     stage_points = get_participant_stage_points(pid)
+    stage_breakdown = get_participant_stage_breakdown(pid)
     teams_visible = now_nl() >= INSCHRIJF_DEADLINE
 
     return render_template('deelnemer.html', p=p, geel_team=geel_team,
@@ -345,6 +385,7 @@ def deelnemer(pid):
                            rood_total=rood_total, questions=questions,
                            answers=answers, participants=all_participants,
                            stage_points=stage_points,
+                           stage_breakdown=stage_breakdown,
                            teams_visible=teams_visible)
 
 

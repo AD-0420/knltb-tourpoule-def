@@ -187,6 +187,44 @@
   </div>
   {% endif %}
 
+  {% if stage_breakdown %}
+  <!-- Detail: scorende renners per etappe -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden mt-6">
+    <div class="px-5 py-3 bg-zinc-900">
+      <span class="font-semibold text-tdf-yellow">📋 Punten per etappe – wie scoorde er?</span>
+    </div>
+    <div class="divide-y divide-gray-100">
+      {% for st in stage_breakdown %}
+      <div class="px-5 py-3">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-gray-800">Etappe {{ st.stage }}</span>
+          {% if st.total > 0 %}
+            <span class="pts-badge text-xs">+{{ st.total }} pts</span>
+          {% else %}
+            <span class="text-xs text-gray-300">geen punten</span>
+          {% endif %}
+        </div>
+        {% if st.riders %}
+        <ul class="mt-2 space-y-1">
+          {% for r in st.riders %}
+          <li class="flex items-center justify-between text-sm">
+            <span class="text-gray-700">
+              {{ r.name }}
+              {% for j in r.jerseys %}
+              <span class="ml-1 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">🏆 {{ j }}</span>
+              {% endfor %}
+            </span>
+            <span class="font-semibold text-gray-600">+{{ r.points }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% endif %}{# end teams_visible #}
 
 </div>
