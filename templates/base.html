@@ -63,7 +63,7 @@
                   {% if request.endpoint == 'renners' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
           <i class="bi bi-person-badge mr-1"></i>Renners
         </a>
-        {% if tour_finished %}
+        {% if eindstand_visible %}
         <a href="{{ url_for('eindstand') }}"
            class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
                   {% if request.endpoint == 'eindstand' %}text-tdf-yellow bg-white/10{% else %}text-gray-300 hover:text-tdf-yellow hover:bg-white/10{% endif %}">
@@ -159,7 +159,7 @@
         <a href="{{ url_for('rood_klassement') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🔴 Rode Lantaarn</a>
         <a href="{{ url_for('etappes') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚩 Etappes</a>
         <a href="{{ url_for('renners') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🚴 Renners</a>
-        {% if tour_finished %}
+        {% if eindstand_visible %}
         <a href="{{ url_for('eindstand') }}" class="px-3 py-2 text-gray-300 hover:text-tdf-yellow text-sm">🏆 Eindstand</a>
         {% endif %}
         {% if inschrijving_open %}

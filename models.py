@@ -3,6 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+class Setting(db.Model):
+    """Eenvoudige key/value-instellingen (bijv. of de eindstand is vrijgegeven)."""
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(255), nullable=True)
+
+
 class Cluster(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)

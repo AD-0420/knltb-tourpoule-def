@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from functools import wraps
 from rapidfuzz import fuzz, process as fuzz_process
-from models import (db, Cluster, Participant, Rider, RoodEntry, Selection, Stage,
+from models import (db, Setting, Cluster, Participant, Rider, RoodEntry, Selection, Stage,
                     StageResult, JerseyWearer, FinalClassification,
                     BonusQuestion, BonusAnswer)
 
@@ -81,17 +81,55 @@ def require_admin(f):
     return decorated
 
 
+def get_setting(key, default=None):
+    try:
+        s = Setting.query.get(key)
+        return s.value if s and s.value is not None else default
+    except Exception:
+        return default
+
+
+def set_setting(key, value):
+    s = Setting.query.get(key)
+    if s:
+        s.value = value
+    else:
+        db.session.add(Setting(key=key, value=value))
+    db.session.commit()
+
+
+def eindstand_status():
+    """Bepaal de zichtbaarheid van de eindstand.
+    - is_final: alle etappes gereden
+    - published: admin heeft de eindstand vrijgegeven voor deelnemers
+    - visible: mag de huidige gebruiker de eindstand zien
+    - admin_preview: admin ziet de eindstand terwijl deze nog niet is vrijgegeven
+    """
+    try:
+        is_final = Stage.query.count() >= TOTAL_STAGES
+    except Exception:
+        is_final = False
+    published = get_setting('eindstand_published', '0') == '1'
+    is_admin = bool(session.get('admin_logged_in'))
+    visible = is_final and (published or is_admin)
+    return {
+        'is_final': is_final,
+        'published': published,
+        'is_admin': is_admin,
+        'visible': visible,
+        'admin_preview': is_final and is_admin and not published,
+    }
+
+
 @app.context_processor
 def inject_tour_status():
-    """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen
-    (eindstand pas aan het einde zichtbaar) en of inschrijven nog open is
-    (Inschrijven-knop verbergen na de deadline)."""
-    try:
-        finished = Stage.query.count() >= TOTAL_STAGES
-    except Exception:
-        finished = False
+    """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen,
+    of de eindstand voor de huidige gebruiker zichtbaar is, en of inschrijven
+    nog open is (Inschrijven-knop verbergen na de deadline)."""
+    status = eindstand_status()
     return {
-        'tour_finished': finished,
+        'tour_finished': status['is_final'],
+        'eindstand_visible': status['visible'],
         'inschrijving_open': now_nl() <= INSCHRIJF_DEADLINE,
     }
 
@@ -333,10 +371,25 @@ def eindstand():
     for i, s in enumerate(rood):
         s['rood_rank'] = i + 1
     stages_done = Stage.query.count()
-    is_final = stages_done >= TOTAL_STAGES
+    status = eindstand_status()
     return render_template('eindstand.html', geel=geel, rood=rood,
                            stages_done=stages_done, total_stages=TOTAL_STAGES,
-                           is_final=is_final)
+                           is_final=status['is_final'], visible=status['visible'],
+                           published=status['published'], is_admin=status['is_admin'],
+                           admin_preview=status['admin_preview'])
+
+
+@app.route('/eindstand/publiceren', methods=['POST'])
+@require_admin
+def publiceer_eindstand():
+    action = request.form.get('action')
+    if action == 'publish':
+        set_setting('eindstand_published', '1')
+        flash('De eindstand is nu zichtbaar voor alle deelnemers.', 'success')
+    else:
+        set_setting('eindstand_published', '0')
+        flash('De eindstand is weer verborgen voor deelnemers.', 'warning')
+    return redirect(url_for('eindstand'))
 
 
 @app.route('/deelnemer/<int:pid>')
