@@ -40,12 +40,25 @@
           🥇 {{ sd.results[0].rider.name }}
         </span>
         {% endif %}
+        {% if sd.day_leader %}
+        <span class="text-xs bg-green-600 text-white font-semibold px-2 py-0.5 rounded whitespace-nowrap"
+              title="Collega met de hoogste dagscore in de poule">
+          🔥 {% if sd.day_leader.names|length == 1 %}{{ sd.day_leader.names[0] }}{% else %}Gedeeld{% endif %} +{{ sd.day_leader.points }}
+        </span>
+        {% endif %}
         <i class="bi bi-chevron-down text-gray-400 ml-1" id="chevron-{{ sd.stage.number }}"></i>
       </div>
     </button>
 
     <!-- Collapsible body -->
     <div id="stage-{{ sd.stage.number }}" class="hidden">
+      {% if sd.day_leader %}
+      <div class="bg-green-50 border-b border-green-100 px-5 py-2.5 text-sm text-green-800">
+        🔥 <strong>Hoogste dagscore in de poule:</strong>
+        {{ sd.day_leader.names|join(', ') }}
+        <span class="font-semibold">(+{{ sd.day_leader.points }} punten)</span>
+      </div>
+      {% endif %}
       <div class="grid grid-cols-1 md:grid-cols-3">
         <!-- Results -->
         <div class="md:col-span-2 overflow-x-auto">

@@ -223,6 +223,36 @@ def get_participant_stage_breakdown(participant_id):
     return breakdown
 
 
+def get_stage_day_leaders():
+    """Bepaal per etappe welke deelnemer(s) de hoogste dagscore (geel) haalden.
+    Returnt dict: stage_id -> {'points': int, 'names': [namen]} (alleen als > 0)."""
+    from collections import defaultdict
+    stage_rider_pts = defaultdict(lambda: defaultdict(int))
+    for r in StageResult.query.all():
+        stage_rider_pts[r.stage_id][r.rider_id] += POINTS_TABLE.get(r.position, 0)
+    for jw in JerseyWearer.query.all():
+        stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
+
+    part_geel = defaultdict(set)
+    for s in Selection.query.filter_by(type='geel').all():
+        part_geel[s.participant_id].add(s.rider_id)
+    part_name = {p.id: p.name for p in Participant.query.all()}
+
+    leaders = {}
+    for stage_id, rider_pts in stage_rider_pts.items():
+        best = 0
+        names = []
+        for pid, rider_ids in part_geel.items():
+            pts = sum(rider_pts.get(rid, 0) for rid in rider_ids)
+            if pts > best:
+                best, names = pts, [part_name.get(pid, '?')]
+            elif pts == best and pts > 0:
+                names.append(part_name.get(pid, '?'))
+        if best > 0:
+            leaders[stage_id] = {'points': best, 'names': sorted(names)}
+    return leaders
+
+
 def get_last_stage_deltas():
     """Bereken voor de meest recente etappe hoeveel geel-punten elke deelnemer
     erbij kreeg. Returnt (stage_number, {participant_id: punten}, hoogste_score).
@@ -445,10 +475,12 @@ def deelnemer(pid):
 @app.route('/etappes')
 def etappes():
     stages = Stage.query.order_by(Stage.number).all()
+    day_leaders = get_stage_day_leaders()
     stage_data = []
     for stage in stages:
         jerseys = {jw.jersey_type: jw.rider for jw in stage.jersey_wearers}
-        stage_data.append({'stage': stage, 'results': stage.results, 'jerseys': jerseys})
+        stage_data.append({'stage': stage, 'results': stage.results, 'jerseys': jerseys,
+                           'day_leader': day_leaders.get(stage.id)})
     return render_template('etappes.html', stage_data=stage_data,
                            points_table=POINTS_TABLE, jersey_labels=JERSEY_LABELS)
 
