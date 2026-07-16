@@ -121,6 +121,14 @@ def eindstand_status():
     }
 
 
+def bonus_active():
+    """Bonusvragen en -punten tellen pas mee ná de laatste etappe.
+    Voor deelnemers worden ze pas zichtbaar zodra de eindstand is vrijgegeven;
+    admins zien ze direct na de laatste etappe (preview). Zelfde regel als de
+    eindstand-zichtbaarheid."""
+    return eindstand_status()['visible']
+
+
 @app.context_processor
 def inject_tour_status():
     """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen,
@@ -293,11 +301,14 @@ def annotate_last_stage(standings):
 
 
 def get_participant_scores():
-    """Return list of dicts with geel/rood scores per participant."""
+    """Return list of dicts with geel/rood scores per participant.
+    Bonuspunten tellen pas mee zodra bonus_active() (na de laatste etappe)."""
     rider_points = get_rider_points_map()
+    include_bonus = bonus_active()
     bonus_counts = {}
-    for ba in BonusAnswer.query.filter_by(correct=True).all():
-        bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
+    if include_bonus:
+        for ba in BonusAnswer.query.filter_by(correct=True).all():
+            bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
 
     participants = Participant.query.order_by(Participant.name).all()
     result = []
@@ -449,8 +460,10 @@ def deelnemer(pid):
     rood_team.sort(key=lambda x: x['points'])
 
     geel_total = sum(x['points'] for x in geel_team)
-    bonus_correct = BonusAnswer.query.filter_by(participant_id=pid, correct=True).count()
-    geel_total += bonus_correct * BONUS_POINTS
+    show_bonus = bonus_active()
+    if show_bonus:
+        bonus_correct = BonusAnswer.query.filter_by(participant_id=pid, correct=True).count()
+        geel_total += bonus_correct * BONUS_POINTS
 
     rood_total = sum(x['points'] for x in rood_team) if rood_team else None
 
@@ -467,6 +480,7 @@ def deelnemer(pid):
                            rood_team=rood_team, geel_total=geel_total,
                            rood_total=rood_total, questions=questions,
                            answers=answers, participants=all_participants,
+                           show_bonus=show_bonus,
                            stage_points=stage_points,
                            stage_breakdown=stage_breakdown,
                            teams_visible=teams_visible)
@@ -533,10 +547,11 @@ def api_chart_geel():
     for jw in JerseyWearer.query.all():
         stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
 
-    # Bonus points per participant (all-time, added to last stage)
+    # Bonus points per participant (pas actief na de laatste etappe, added to last stage)
     bonus_counts = {}
-    for ba in BonusAnswer.query.filter_by(correct=True).all():
-        bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
+    if bonus_active():
+        for ba in BonusAnswer.query.filter_by(correct=True).all():
+            bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
 
     labels = [f'E{s.number}' for s in stages]
     datasets = []
@@ -596,8 +611,9 @@ def api_chart_positie():
         stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
 
     bonus_counts = {}
-    for ba in BonusAnswer.query.filter_by(correct=True).all():
-        bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
+    if bonus_active():
+        for ba in BonusAnswer.query.filter_by(correct=True).all():
+            bonus_counts[ba.participant_id] = bonus_counts.get(ba.participant_id, 0) + 1
 
     # Compute cumulative totals per participant per stage
     p_cum = {p.id: 0 for p in participants}
