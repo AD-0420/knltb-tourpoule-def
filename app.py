@@ -6,7 +6,8 @@ import unicodedata
 import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
+from flask import (Flask, render_template, request, redirect, url_for, flash, abort,
+                   session, has_request_context)
 from functools import wraps
 from rapidfuzz import fuzz, process as fuzz_process
 from models import (db, Setting, Cluster, Participant, Rider, RoodEntry, Selection, Stage,
@@ -110,7 +111,7 @@ def eindstand_status():
     except Exception:
         is_final = False
     published = get_setting('eindstand_published', '0') == '1'
-    is_admin = bool(session.get('admin_logged_in'))
+    is_admin = bool(session.get('admin_logged_in')) if has_request_context() else False
     visible = is_final and (published or is_admin)
     return {
         'is_final': is_final,
@@ -129,6 +130,18 @@ def bonus_active():
     return eindstand_status()['visible']
 
 
+def score_visibility():
+    """Bepaal wat de huidige viewer in scores/standen mag zien.
+    Tot de eindstand is vrijgegeven (voor deelnemers) resp. de Tour is afgelopen
+    (voor admins) blijven de laatste etappe én het eindklassement verborgen.
+    Returnt (reveal, hidden_stage_ids, include_gc)."""
+    reveal = eindstand_status()['visible']
+    if reveal:
+        return True, set(), True
+    hidden = {s.id for s in Stage.query.filter_by(number=TOTAL_STAGES).all()}
+    return False, hidden, False
+
+
 @app.context_processor
 def inject_tour_status():
     """Maak overal (o.a. in de navigatie) beschikbaar of de Tour is afgelopen,
@@ -142,19 +155,28 @@ def inject_tour_status():
     }
 
 
-def get_rider_points_map():
-    """Return dict of rider_id -> total_points for all riders."""
+def get_rider_points_map(hidden_stage_ids=None, include_gc=True):
+    """Return dict of rider_id -> total_points for all riders.
+    hidden_stage_ids: etappes die (nog) niet meetellen; include_gc: eindklassement
+    meetellen. Zo blijven de laatste etappe en het eindklassement verborgen tot
+    de eindstand is vrijgegeven."""
     from collections import defaultdict
+    hidden = hidden_stage_ids or set()
     points = defaultdict(int)
 
     for result in StageResult.query.all():
+        if result.stage_id in hidden:
+            continue
         points[result.rider_id] += POINTS_TABLE.get(result.position, 0)
 
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         points[jw.rider_id] += JERSEY_DAILY_POINTS
 
-    for fc in FinalClassification.query.all():
-        points[fc.rider_id] += POINTS_TABLE.get(fc.position, 0)
+    if include_gc:
+        for fc in FinalClassification.query.all():
+            points[fc.rider_id] += POINTS_TABLE.get(fc.position, 0)
 
     return points
 
@@ -162,25 +184,29 @@ def get_rider_points_map():
 def get_participant_stage_points(participant_id):
     """Return per-stage cumulative geel points for one participant.
     Returns list of {'stage': int, 'pts': int, 'cumul': int} sorted by stage.
-    """
+    Verborgen etappes (laatste etappe tot vrijgave) worden weggelaten."""
     from collections import defaultdict
     p = Participant.query.get(participant_id)
     if not p:
         return []
+    _, hidden, _ = score_visibility()
 
     geel_rider_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
     stage_pts = defaultdict(int)
 
     for result in StageResult.query.all():
+        if result.stage_id in hidden:
+            continue
         if result.rider_id in geel_rider_ids:
             stage_pts[result.stage_id] += POINTS_TABLE.get(result.position, 0)
 
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         if jw.rider_id in geel_rider_ids:
             stage_pts[jw.stage_id] += JERSEY_DAILY_POINTS
 
-    stages = Stage.query.order_by(Stage.number).all()
-    stage_id_to_num = {s.id: s.number for s in stages}
+    stages = [s for s in Stage.query.order_by(Stage.number).all() if s.id not in hidden]
 
     rows = []
     cumul = 0
@@ -203,14 +229,19 @@ def get_participant_stage_breakdown(participant_id):
     geel_ids = {s.rider_id for s in p.selections if s.type == 'geel'}
     if not geel_ids:
         return []
+    _, hidden, _ = score_visibility()
     names = {r.id: r.name for r in Rider.query.filter(Rider.id.in_(geel_ids)).all()}
 
     # stage_id -> rider_id -> {'points': int, 'jerseys': [labels]}
     per = defaultdict(lambda: defaultdict(lambda: {'points': 0, 'jerseys': []}))
     for res in StageResult.query.all():
+        if res.stage_id in hidden:
+            continue
         if res.rider_id in geel_ids:
             per[res.stage_id][res.rider_id]['points'] += POINTS_TABLE.get(res.position, 0)
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         if jw.rider_id in geel_ids:
             per[jw.stage_id][jw.rider_id]['points'] += JERSEY_DAILY_POINTS
             per[jw.stage_id][jw.rider_id]['jerseys'].append(
@@ -218,6 +249,8 @@ def get_participant_stage_breakdown(participant_id):
 
     breakdown = []
     for stage in Stage.query.order_by(Stage.number).all():
+        if stage.id in hidden:
+            continue
         riders = []
         for rid, info in per.get(stage.id, {}).items():
             if info['points'] > 0:
@@ -235,10 +268,15 @@ def get_stage_day_leaders():
     """Bepaal per etappe welke deelnemer(s) de hoogste dagscore (geel) haalden.
     Returnt dict: stage_id -> {'points': int, 'names': [namen]} (alleen als > 0)."""
     from collections import defaultdict
+    _, hidden, _ = score_visibility()
     stage_rider_pts = defaultdict(lambda: defaultdict(int))
     for r in StageResult.query.all():
+        if r.stage_id in hidden:
+            continue
         stage_rider_pts[r.stage_id][r.rider_id] += POINTS_TABLE.get(r.position, 0)
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
 
     part_geel = defaultdict(set)
@@ -266,7 +304,11 @@ def get_last_stage_deltas():
     erbij kreeg. Returnt (stage_number, {participant_id: punten}, hoogste_score).
     Als er nog geen etappe is: (None, {}, 0)."""
     from collections import defaultdict
-    last_stage = Stage.query.order_by(Stage.number.desc()).first()
+    _, hidden, _ = score_visibility()
+    q = Stage.query
+    if hidden:
+        q = q.filter(~Stage.id.in_(hidden))
+    last_stage = q.order_by(Stage.number.desc()).first()
     if not last_stage:
         return None, {}, 0
 
@@ -302,9 +344,10 @@ def annotate_last_stage(standings):
 
 def get_participant_scores():
     """Return list of dicts with geel/rood scores per participant.
-    Bonuspunten tellen pas mee zodra bonus_active() (na de laatste etappe)."""
-    rider_points = get_rider_points_map()
-    include_bonus = bonus_active()
+    Laatste etappe, eindklassement en bonus tellen pas mee na vrijgave."""
+    reveal, hidden, include_gc = score_visibility()
+    rider_points = get_rider_points_map(hidden_stage_ids=hidden, include_gc=include_gc)
+    include_bonus = reveal
     bonus_counts = {}
     if include_bonus:
         for ba in BonusAnswer.query.filter_by(correct=True).all():
@@ -436,7 +479,8 @@ def publiceer_eindstand():
 @app.route('/deelnemer/<int:pid>')
 def deelnemer(pid):
     p = Participant.query.get_or_404(pid)
-    rider_points = get_rider_points_map()
+    _, hidden, include_gc = score_visibility()
+    rider_points = get_rider_points_map(hidden_stage_ids=hidden, include_gc=include_gc)
 
     geel_team = sorted(
         [{'rider': s.rider, 'points': rider_points[s.rider_id]}
@@ -488,7 +532,8 @@ def deelnemer(pid):
 
 @app.route('/etappes')
 def etappes():
-    stages = Stage.query.order_by(Stage.number).all()
+    _, hidden, _ = score_visibility()
+    stages = [s for s in Stage.query.order_by(Stage.number).all() if s.id not in hidden]
     day_leaders = get_stage_day_leaders()
     stage_data = []
     for stage in stages:
@@ -502,7 +547,8 @@ def etappes():
 @app.route('/renners')
 def renners():
     from collections import Counter
-    rider_points = get_rider_points_map()
+    _, hidden, include_gc = score_visibility()
+    rider_points = get_rider_points_map(hidden_stage_ids=hidden, include_gc=include_gc)
     geel_counts = Counter(s.rider_id for s in Selection.query.filter_by(type='geel').all())
     rood_counts  = Counter(e.matched_rider_id for e in RoodEntry.query.all()
                            if e.matched_rider_id)
@@ -533,7 +579,8 @@ def renners():
 def api_chart_geel():
     """Return cumulative geel-scores per stage per participant as JSON for Chart.js."""
     from collections import defaultdict
-    stages = Stage.query.order_by(Stage.number).all()
+    _, hidden, _ = score_visibility()
+    stages = [s for s in Stage.query.order_by(Stage.number).all() if s.id not in hidden]
     if not stages:
         return {'labels': [], 'datasets': []}
 
@@ -543,8 +590,12 @@ def api_chart_geel():
     # rider_id -> {stage_id: points_in_that_stage}
     stage_rider_pts = defaultdict(lambda: defaultdict(int))
     for sr in StageResult.query.all():
+        if sr.stage_id in hidden:
+            continue
         stage_rider_pts[sr.stage_id][sr.rider_id] += POINTS_TABLE.get(sr.position, 0)
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
 
     # Bonus points per participant (pas actief na de laatste etappe, added to last stage)
@@ -598,7 +649,8 @@ def api_chart_positie():
     """Return rank per stage per participant as JSON for Chart.js."""
     from collections import defaultdict
     from flask import jsonify
-    stages = Stage.query.order_by(Stage.number).all()
+    _, hidden, _ = score_visibility()
+    stages = [s for s in Stage.query.order_by(Stage.number).all() if s.id not in hidden]
     if not stages:
         return jsonify({'labels': [], 'datasets': []})
 
@@ -606,8 +658,12 @@ def api_chart_positie():
 
     stage_rider_pts = defaultdict(lambda: defaultdict(int))
     for sr in StageResult.query.all():
+        if sr.stage_id in hidden:
+            continue
         stage_rider_pts[sr.stage_id][sr.rider_id] += POINTS_TABLE.get(sr.position, 0)
     for jw in JerseyWearer.query.all():
+        if jw.stage_id in hidden:
+            continue
         stage_rider_pts[jw.stage_id][jw.rider_id] += JERSEY_DAILY_POINTS
 
     bonus_counts = {}
